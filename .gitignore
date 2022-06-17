@@ -7,3 +7,7 @@ artifacts
 env
 venv
 .idea
+
+# Added by cargo
+
+/target

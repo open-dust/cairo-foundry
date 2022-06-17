@@ -1,0 +1,24 @@
+name: CI
+
+on: [push, pull_request, pull_request_target]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install rustup
+        run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+      - name: Build project
+        run: cargo build
+      - name: Run unit tests
+        run: cargo test
+  formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install rustup
+        run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+      - name: Check files formatting
+        run: cargo fmt --check
+        

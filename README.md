@@ -1,8 +1,8 @@
 <p align="center">
-    <img src="resources/img/logo.png">
+    <img width="150" src="resources/img/logo.png">
 </p>
 <div align="center">
-  <h1 align="center">ProjectName</h1>
+  <h1 align="center">cairo-foundry</h1>
   <p align="center">
     <a href="https://discord.gg/onlydust">
         <img src="https://img.shields.io/badge/Discord-6666FF?style=for-the-badge&logo=discord&logoColor=white">
@@ -15,7 +15,7 @@
     </a>
   </p>
   
-  <h3 align="center">Project description</h3>
+  <h3 align="center">Foundry like project for Starknet contracts development</h3>
 </div>
 
 > ## ⚠️ WARNING! ⚠️
@@ -24,6 +24,7 @@
 > Expect rapid iteration.
 
 ## 🎟️ Description
+Foundry like project for Starknet contracts development.
 
 ## 🎗️ Prerequisites
 
@@ -34,6 +35,8 @@
 ## 🌡️ Testing
 
 ## 🫶 Contributing
+
+Pull requests are welcome, please check our [contribution guidelines](./CONTRIBUTING.md) .
 
 ## 📄 License
 
