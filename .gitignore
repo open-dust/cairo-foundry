@@ -1,0 +1,9 @@
+# Node
+node_modules
+
+target
+build
+artifacts
+env
+venv
+.idea
