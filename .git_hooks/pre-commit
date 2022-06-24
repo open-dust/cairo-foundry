@@ -1,0 +1,35 @@
+#!/bin/bash
+
+echo "Pre Commit Hook"
+echo -e "\n# taplo format"
+
+taplo format
+
+echo -e "\n# cargo fmt"
+
+diff=$(cargo +nightly fmt -- --check)
+result=$?
+
+if [[ ${result} -ne 0 ]] ; then
+    cat <<\EOF
+There are some code style issues, run `cargo fmt` first.
+EOF
+    exit 1
+fi
+
+echo -e "\n# cargo clippy"
+
+diff=$(cargo clippy --bins --tests --examples --all -- -D warnings)
+result=$?
+
+if [[ ${result} -ne 0 ]] ; then
+    cat <<\EOF
+There are some code style issues, run `cargo clippy` first.
+EOF
+    exit 1
+fi
+
+echo ""
+
+
+exit 0

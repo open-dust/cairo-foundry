@@ -1,0 +1,19 @@
+#!/bin/bash
+
+echo "Pre Push Hook"
+
+echo -e "\n# cargo test"
+
+diff=$(cargo test)
+result=$?
+
+if [[ ${result} -ne 0 ]] ; then
+    cat <<\EOF
+There are some test failing, run `cargo test` first.
+EOF
+    exit 1
+fi
+
+echo ""
+
+exit 0

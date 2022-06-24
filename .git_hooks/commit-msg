@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+
+cat "${1}" | "${HOME}/.cargo/bin/conventional_commits_linter" --from-stdin --allow-angular-type-only
