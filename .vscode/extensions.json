@@ -1,6 +1,7 @@
 {
     "recommendations": [
         "editorconfig.editorconfig",
-        "matklad.rust-analyzer"
+        "matklad.rust-analyzer",
+        "ericglau.cairo-ls"
     ]
 }
