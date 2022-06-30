@@ -1,4 +1,4 @@
-use super::Command;
+use super::CommandExecution;
 use clap::{Args, ValueHint};
 use lazy_static::lazy_static;
 use log::info;
@@ -9,7 +9,7 @@ use walkdir::WalkDir;
 
 /// List command
 #[derive(Args, Debug)]
-pub struct List {
+pub struct ListArgs {
 	/// Root path
 	#[clap(short, long, value_hint=ValueHint::DirPath, value_parser=path_is_valid_directory)]
 	root: PathBuf,
@@ -26,12 +26,12 @@ fn path_is_valid_directory(path: &str) -> Result<PathBuf, String> {
 
 /// List command output
 #[derive(Debug, Serialize)]
-pub struct Output {
+pub struct ListOutput {
 	/// The list of test files found
 	files: Vec<PathBuf>,
 }
 
-impl fmt::Display for Output {
+impl fmt::Display for ListOutput {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(
 			f,
@@ -45,10 +45,8 @@ impl fmt::Display for Output {
 	}
 }
 
-impl Command for List {
-	type Output = Output;
-
-	fn exec(&self) -> Result<Output, String> {
+impl CommandExecution<ListOutput> for ListArgs {
+	fn exec(&self) -> Result<ListOutput, String> {
 		info!("Listing files within directory {:?}", self.root);
 
 		lazy_static! {
@@ -73,19 +71,19 @@ impl Command for List {
 			.map_err(|err| err.to_string())?;
 		test_files.sort();
 
-		Ok(Output { files: test_files })
+		Ok(ListOutput { files: test_files })
 	}
 }
 
 #[cfg(test)]
 mod test {
-	use super::{List, Output};
-	use crate::cli::commands::Command;
+	use super::{ListArgs, ListOutput};
+	use crate::cli::commands::CommandExecution;
 	use std::path::PathBuf;
 
 	#[test]
 	fn list_test_files_recursively() {
-		let result = List {
+		let result = ListArgs {
 			root: PathBuf::from("./test_starknet_projects"),
 		}
 		.exec();
@@ -102,7 +100,7 @@ mod test {
 
 	#[test]
 	fn returns_error_in_case_of_failure() {
-		let result = List {
+		let result = ListArgs {
 			root: PathBuf::from("invalid"),
 		}
 		.exec();
@@ -116,7 +114,7 @@ mod test {
 
 	#[test]
 	fn output_can_display_as_string() {
-		let output = Output {
+		let output = ListOutput {
 			files: vec![PathBuf::from("item 1"), PathBuf::from("item 2")],
 		};
 
