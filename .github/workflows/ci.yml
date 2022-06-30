@@ -1,6 +1,7 @@
 name: CI
 
-on: [push, pull_request, pull_request_target]
+on:
+  pull_request: ~
 
 jobs:
   unit-tests:
@@ -21,4 +22,3 @@ jobs:
         run: curl https://sh.rustup.rs -sSf | sh -s -- -y
       - name: Check files formatting
         run: cargo fmt --check
-        
