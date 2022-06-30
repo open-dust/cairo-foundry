@@ -1,4 +1,7 @@
-use cairo_foundry::cli::{self, formatter::Formatter};
+use cairo_foundry::cli::{
+	self,
+	formatter::{self, Formatter},
+};
 use clap::Parser;
 use log::error;
 
@@ -7,7 +10,7 @@ fn main() {
 
 	let cli = cli::Args::parse();
 
-	let formatter = Box::new(cli::formatter::text::TextFormatter {});
+	let formatter = formatter::make(&cli);
 
 	match cli.command.exec() {
 		Ok(output) => println!("{}", formatter.format(&output)),
