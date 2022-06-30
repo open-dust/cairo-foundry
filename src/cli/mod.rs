@@ -7,6 +7,13 @@ use clap::Parser;
  */
 pub mod commands;
 
+/**
+ * Formatter module
+ *
+ * This module contains all formatters that can be used to print commands output
+ */
+pub mod formatter;
+
 use commands::Commands;
 
 /// Store the command line arguments

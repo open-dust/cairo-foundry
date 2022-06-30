@@ -1,7 +1,5 @@
-use std::fmt::Display;
-
+use crate::cli::formatter::Formattable;
 use clap::Subcommand;
-use log::error;
 
 /// list module: contains everything related to the `List` command
 pub mod list;
@@ -15,19 +13,14 @@ pub enum Commands {
 
 /// Bahaviour of a command
 pub trait Command {
-	type Output: Display;
+	type Output: Formattable;
 	fn exec(&self) -> Result<Self::Output, String>;
 }
 
 impl Commands {
-	pub fn exec(&self) {
-		let result = match &self {
+	pub fn exec(&self) -> Result<impl Formattable, String> {
+		match &self {
 			Commands::List(args) => args.exec(),
-		};
-
-		match result {
-			Ok(output) => println!("{}", output),
-			Err(err) => error!("{}", err),
-		};
+		}
 	}
 }
