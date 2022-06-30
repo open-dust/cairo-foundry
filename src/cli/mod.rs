@@ -24,4 +24,8 @@ pub struct Args {
 	/// command to run
 	#[clap(subcommand)]
 	pub command: Commands,
+
+	/// Format the command output in JSON
+	#[clap(long)]
+	pub json: bool,
 }

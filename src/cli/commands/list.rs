@@ -3,6 +3,7 @@ use clap::{Args, ValueHint};
 use lazy_static::lazy_static;
 use log::info;
 use regex::Regex;
+use serde::Serialize;
 use std::{fmt, path::PathBuf};
 use walkdir::WalkDir;
 
@@ -24,7 +25,7 @@ fn path_is_valid_directory(path: &str) -> Result<PathBuf, String> {
 }
 
 /// List command output
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Output {
 	/// The list of test files found
 	files: Vec<PathBuf>,
