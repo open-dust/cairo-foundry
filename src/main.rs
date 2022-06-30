@@ -1,5 +1,6 @@
 use cairo_foundry::cli::{
 	self,
+	commands::CommandExecution,
 	formatter::{self, Formatter},
 };
 use clap::Parser;
