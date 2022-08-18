@@ -3,7 +3,10 @@ use std::{fmt::Display, path::PathBuf};
 use clap::{Args, ValueHint};
 use cleopatra_cairo::{
 	cairo_run::cairo_run,
-	vm::{errors::runner_errors::RunnerError, runners::cairo_runner::CairoRunner},
+	vm::{
+		errors::runner_errors::RunnerError, hints::execute_hint::BuiltinHintExecutor,
+		runners::cairo_runner::CairoRunner,
+	},
 };
 use serde::Serialize;
 
@@ -28,6 +31,8 @@ fn is_json(path: &str) -> Result<PathBuf, String> {
 	}
 }
 
+static HINT_EXECUTOR: BuiltinHintExecutor = BuiltinHintExecutor {};
+
 /// Execute command output
 #[derive(Debug, Serialize)]
 pub struct ExecuteOutput {}
@@ -40,15 +45,16 @@ impl Display for ExecuteOutput {
 
 impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 	fn exec(&self) -> Result<ExecuteOutput, String> {
-		let mut cairo_runner = cairo_run(&self.program).map_err(|e| {
-			format!(
-				"failed to run the program \"{}\": {}",
-				self.program.display(),
-				e,
-			)
-		})?;
+		let mut cairo_runner =
+			cairo_run(&self.program, "main", false, &HINT_EXECUTOR).map_err(|e| {
+				format!(
+					"failed to run the program \"{}\": {}",
+					self.program.display(),
+					e,
+				)
+			})?;
 
-		print_program_output(&mut cairo_runner).map_err(|e| {
+		cairo_runner.write_output(&mut std::io::stdout()).map_err(|e| {
 			format!(
 				"failed to print the program output \"{}\": {}",
 				self.program.display(),
@@ -58,22 +64,6 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 
 		Ok(ExecuteOutput {})
 	}
-}
-
-fn print_program_output(cairo_runner: &mut CairoRunner) -> Result<(), RunnerError> {
-	let mut output = Vec::<u8>::new();
-	let stdout = &mut std::io::stdout();
-
-	cairo_runner.write_output(&mut output)?;
-	let mut output = String::from_utf8(output).map_err(|_| RunnerError::WriteFail)?;
-
-	if output.starts_with("Program Output:") {
-		output = output.strip_prefix("Program Output:").unwrap().trim_start().to_string();
-	}
-
-	writeln!(stdout as &mut dyn std::io::Write, "{}", output)
-		.map_err(|_| RunnerError::WriteFail)?;
-	Ok(())
 }
 
 #[cfg(test)]
