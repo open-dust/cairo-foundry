@@ -1,7 +1,8 @@
-use std::{fmt::Display, path::PathBuf};
+use std::{fmt::Display, io::Write, path::PathBuf, str::from_utf8};
 
 use clap::{Args, ValueHint};
 use cleopatra_cairo::{cairo_run::cairo_run, vm::hints::execute_hint::BuiltinHintExecutor};
+use log::error;
 use serde::Serialize;
 
 use super::CommandExecution;
@@ -29,11 +30,28 @@ static HINT_EXECUTOR: BuiltinHintExecutor = BuiltinHintExecutor {};
 
 /// Execute command output
 #[derive(Debug, Serialize)]
-pub struct ExecuteOutput {}
+pub struct ExecuteOutput(Vec<u8>);
+
+impl Write for ExecuteOutput {
+	fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+		self.0.write(buf)
+	}
+
+	fn flush(&mut self) -> std::io::Result<()> {
+		self.0.flush()
+	}
+}
 
 impl Display for ExecuteOutput {
-	fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		Ok(())
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			from_utf8(&self.0).map_err(|e| {
+				error!("failed to format the execution output due to invalid utf8 encodig: {e}");
+				std::fmt::Error
+			})?
+		)
 	}
 }
 
@@ -48,7 +66,9 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 				)
 			})?;
 
-		cairo_runner.write_output(&mut std::io::stdout()).map_err(|e| {
+		let mut output = ExecuteOutput(vec![]);
+
+		cairo_runner.write_output(&mut output).map_err(|e| {
 			format!(
 				"failed to print the program output \"{}\": {}",
 				self.program.display(),
@@ -56,7 +76,7 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 			)
 		})?;
 
-		Ok(ExecuteOutput {})
+		Ok(output)
 	}
 }
 
