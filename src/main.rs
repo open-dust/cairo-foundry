@@ -14,7 +14,7 @@ fn main() {
 	let formatter = formatter::make(&cli);
 
 	match cli.command.exec() {
-		Ok(output) => println!("{}", formatter.format(&output)),
+		Ok(output) => print!("{}", formatter.format(&output)),
 		Err(error) => error!("{}", error),
 	};
 }
