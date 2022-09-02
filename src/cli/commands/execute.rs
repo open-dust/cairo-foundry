@@ -1,7 +1,7 @@
 use std::{fmt::Display, io::Write, path::PathBuf, str::from_utf8};
 
 use clap::{Args, ValueHint};
-use cleopatra_cairo::{cairo_run::cairo_run, vm::hints::execute_hint::BuiltinHintExecutor};
+//use cleopatra_cairo::{cairo_run::cairo_run, vm::hints::execute_hint::BuiltinHintExecutor};
 use log::error;
 use serde::Serialize;
 
@@ -19,7 +19,7 @@ use cairo_rs::hint_processor::proxies::{
 use cairo_rs::serde::deserialize_program::ApTracking;
 use cairo_rs::vm::errors::vm_errors::VirtualMachineError;
 use std::collections::HashMap;
-use std::path::Path;
+//use std::path::Path;
 //-----------------
 
 #[derive(Args, Debug)]
@@ -41,7 +41,7 @@ fn is_json(path: &str) -> Result<PathBuf, String> {
 	}
 }
 
-static HINT_EXECUTOR: BuiltinHintExecutor = BuiltinHintExecutor {};
+//static HINT_EXECUTOR: BuiltinHintExecutor = BuiltinHintExecutor {};
 
 /// Execute command output
 #[derive(Debug, Serialize)]
@@ -72,8 +72,16 @@ impl Display for ExecuteOutput {
 
 impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 	fn exec(&self) -> Result<ExecuteOutput, String> {
+    let hint = HintFunc(Box::new(greater_than_a_hint));
+
+    //Instantiate the hint processor
+    let mut hint_processor = BuiltinHintProcessor::new_empty();
+
+    //Add the custom hint, together with the Python code
+    hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
+
 		let mut cairo_runner =
-			cairo_run(&self.program, "main", false, &HINT_EXECUTOR).map_err(|e| {
+			cairo_run(&self.program, "main", false, &hint_processor).map_err(|e| {
 				format!(
 					"failed to run the program \"{}\": {}",
 					self.program.display(),
@@ -94,9 +102,9 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 		Ok(output)
 	}
 }
-//---------------------------------
+
 // hint assertion test
-fn less_than_a_hint(
+fn greater_than_a_hint(
     vm_proxy: &mut VMProxy,
     _exec_scopes_proxy: &mut ExecutionScopesProxy,
     ids_data: &HashMap<String, HintReference>,
@@ -104,31 +112,9 @@ fn less_than_a_hint(
 ) -> Result<(), VirtualMachineError> {
     let a = get_integer_from_var_name("a", vm_proxy, ids_data, ap_tracking)?;
     let b = get_integer_from_var_name("b", vm_proxy, ids_data, ap_tracking)?;
-    println!("{}", a < b);
+    println!("{}", a > b);
     Ok(())
 }
-
-fn main() {
-    // Wrap the Rust hint implementation in a Box smart pointer inside a HintFunc 
-    //let hint = HintFunc(Box::new(print_a_hint));
-    let hint = HintFunc(Box::new(less_than_a_hint));
-
-    //Instantiate the hint processor
-    let mut hint_processor = BuiltinHintProcessor::new_empty();
-
-    //Add the custom hint, together with the Python code
-    hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
-
-    //Run the cairo program
-    cairo_run(
-        Path::new("custom_hint.json"),
-        "main",
-        false,
-        &hint_processor,
-    )
-    .expect("Couldn't run program");
-}
-//-------------------------------------------------------
 
 #[cfg(test)]
 mod test {
