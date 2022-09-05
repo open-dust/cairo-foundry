@@ -5,17 +5,19 @@ use log::error;
 use serde::Serialize;
 
 use super::CommandExecution;
-use cairo_rs::cairo_run::cairo_run;
-use cairo_rs::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
-    BuiltinHintProcessor, HintFunc,
+use cairo_rs::{
+	cairo_run::cairo_run,
+	hint_processor::{
+		builtin_hint_processor::{
+			builtin_hint_processor_definition::{BuiltinHintProcessor, HintFunc},
+			hint_utils::get_integer_from_var_name,
+		},
+		hint_processor_definition::HintReference,
+		proxies::{exec_scopes_proxy::ExecutionScopesProxy, vm_proxy::VMProxy},
+	},
+	serde::deserialize_program::ApTracking,
+	vm::errors::vm_errors::VirtualMachineError,
 };
-use cairo_rs::hint_processor::builtin_hint_processor::hint_utils::get_integer_from_var_name;
-use cairo_rs::hint_processor::hint_processor_definition::HintReference;
-use cairo_rs::hint_processor::proxies::{
-    exec_scopes_proxy::ExecutionScopesProxy, vm_proxy::VMProxy,
-};
-use cairo_rs::serde::deserialize_program::ApTracking;
-use cairo_rs::vm::errors::vm_errors::VirtualMachineError;
 use std::collections::HashMap;
 
 #[derive(Args, Debug)]
@@ -66,9 +68,9 @@ impl Display for ExecuteOutput {
 
 impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 	fn exec(&self) -> Result<ExecuteOutput, String> {
-    let hint = HintFunc(Box::new(greater_than_hint));
-    let mut hint_processor = BuiltinHintProcessor::new_empty();
-    hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
+		let hint = HintFunc(Box::new(greater_than_hint));
+		let mut hint_processor = BuiltinHintProcessor::new_empty();
+		hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
 
 		let mut cairo_runner =
 			cairo_run(&self.program, "main", false, &hint_processor).map_err(|e| {
@@ -94,15 +96,15 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 }
 
 fn greater_than_hint(
-    vm_proxy: &mut VMProxy,
-    _exec_scopes_proxy: &mut ExecutionScopesProxy,
-    ids_data: &HashMap<String, HintReference>,
-    ap_tracking: &ApTracking,
+	vm_proxy: &mut VMProxy,
+	_exec_scopes_proxy: &mut ExecutionScopesProxy,
+	ids_data: &HashMap<String, HintReference>,
+	ap_tracking: &ApTracking,
 ) -> Result<(), VirtualMachineError> {
-    let a = get_integer_from_var_name("a", vm_proxy, ids_data, ap_tracking)?;
-    let b = get_integer_from_var_name("b", vm_proxy, ids_data, ap_tracking)?;
-    println!("{}", a > b);
-    Ok(())
+	let a = get_integer_from_var_name("a", vm_proxy, ids_data, ap_tracking)?;
+	let b = get_integer_from_var_name("b", vm_proxy, ids_data, ap_tracking)?;
+	println!("{}", a > b);
+	Ok(())
 }
 
 #[cfg(test)]
@@ -132,9 +134,7 @@ mod test {
 
 		assert!(
 			ExecuteArgs {
-				program: PathBuf::from(
-					"./test_starknet_projects/hint_assertion/custom_hint.json"
-				),
+				program: PathBuf::from("./test_starknet_projects/hint_assertion/custom_hint.json"),
 			}
 			.exec()
 			.is_ok()
