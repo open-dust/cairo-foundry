@@ -1,12 +1,10 @@
 use std::{fmt::Display, io::Write, path::PathBuf, str::from_utf8};
 
 use clap::{Args, ValueHint};
-//use cleopatra_cairo::{cairo_run::cairo_run, vm::hints::execute_hint::BuiltinHintExecutor};
 use log::error;
 use serde::Serialize;
 
 use super::CommandExecution;
-//----------------
 use cairo_rs::cairo_run::cairo_run;
 use cairo_rs::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
     BuiltinHintProcessor, HintFunc,
@@ -19,8 +17,6 @@ use cairo_rs::hint_processor::proxies::{
 use cairo_rs::serde::deserialize_program::ApTracking;
 use cairo_rs::vm::errors::vm_errors::VirtualMachineError;
 use std::collections::HashMap;
-//use std::path::Path;
-//-----------------
 
 #[derive(Args, Debug)]
 pub struct ExecuteArgs {
@@ -40,8 +36,6 @@ fn is_json(path: &str) -> Result<PathBuf, String> {
 		Err(format!("\"{}\" is not a valid file", path.display()))
 	}
 }
-
-//static HINT_EXECUTOR: BuiltinHintExecutor = BuiltinHintExecutor {};
 
 /// Execute command output
 #[derive(Debug, Serialize)]
@@ -72,12 +66,8 @@ impl Display for ExecuteOutput {
 
 impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 	fn exec(&self) -> Result<ExecuteOutput, String> {
-    let hint = HintFunc(Box::new(greater_than_a_hint));
-
-    //Instantiate the hint processor
+    let hint = HintFunc(Box::new(greater_than_hint));
     let mut hint_processor = BuiltinHintProcessor::new_empty();
-
-    //Add the custom hint, together with the Python code
     hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
 
 		let mut cairo_runner =
@@ -103,8 +93,7 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 	}
 }
 
-// hint assertion test
-fn greater_than_a_hint(
+fn greater_than_hint(
     vm_proxy: &mut VMProxy,
     _exec_scopes_proxy: &mut ExecutionScopesProxy,
     ids_data: &HashMap<String, HintReference>,
@@ -135,6 +124,16 @@ mod test {
 			ExecuteArgs {
 				program: PathBuf::from(
 					"./test_starknet_projects/compiled_programs/valid_program_b.json"
+				),
+			}
+			.exec()
+			.is_ok()
+		);
+
+		assert!(
+			ExecuteArgs {
+				program: PathBuf::from(
+					"./test_starknet_projects/hint_assertion/custom_hint.json"
 				),
 			}
 			.exec()
