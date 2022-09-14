@@ -133,7 +133,6 @@ version = "0.1.0"
 dependencies = [
  "cairo-rs",
  "clap",
- "cleopatra_cairo",
  "env_logger",
  "lazy_static",
  "log",
@@ -218,31 +217,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2850f2f5a82cbf437dd5af4d49848fbdfc27c157c3d010345776f952765261c5"
 dependencies = [
  "os_str_bytes",
-]
-
-[[package]]
-name = "cleopatra_cairo"
-version = "0.1.0"
-source = "git+https://github.com/lambdaclass/cleopatra_cairo#dcb4cdb10fa057572b6e99dee18f62ecd12f3a13"
-dependencies = [
- "bincode",
- "clap",
- "generic-array",
- "hex",
- "keccak",
- "lazy_static",
- "mimalloc",
- "nom",
- "num-bigint",
- "num-integer",
- "num-traits",
- "parse-hyperlinks",
- "serde",
- "serde_bytes",
- "serde_json",
- "sha2 0.10.2",
- "sha3",
- "starknet-crypto",
 ]
 
 [[package]]
