@@ -112,55 +112,45 @@ mod test {
 	use super::*;
 	#[test]
 	fn valid_programs() {
-		assert!(
-			ExecuteArgs {
-				program: PathBuf::from(
-					"./test_starknet_projects/compiled_programs/valid_program_a.json"
-				),
-			}
-			.exec()
-			.is_ok()
-		);
+		assert!(ExecuteArgs {
+			program: PathBuf::from(
+				"./test_starknet_projects/compiled_programs/valid_program_a.json"
+			),
+		}
+		.exec()
+		.is_ok());
 
-		assert!(
-			ExecuteArgs {
-				program: PathBuf::from(
-					"./test_starknet_projects/compiled_programs/valid_program_b.json"
-				),
-			}
-			.exec()
-			.is_ok()
-		);
+		assert!(ExecuteArgs {
+			program: PathBuf::from(
+				"./test_starknet_projects/compiled_programs/valid_program_b.json"
+			),
+		}
+		.exec()
+		.is_ok());
 
-		assert!(
-			ExecuteArgs {
-				program: PathBuf::from("./test_starknet_projects/hint_assertion/custom_hint.json"),
-			}
-			.exec()
-			.is_ok()
-		);
+		assert!(ExecuteArgs {
+			program: PathBuf::from("./test_starknet_projects/hint_assertion/custom_hint.json"),
+		}
+		.exec()
+		.is_ok());
 	}
 
 	#[test]
 	fn invalid_programs() {
-		assert!(
-			ExecuteArgs {
-				program: PathBuf::from(
-					"./test_starknet_projects/compiled_programs/invalid_odd_length_hex.json"
-				),
-			}
-			.exec()
-			.is_err()
-		);
+		assert!(ExecuteArgs {
+			program: PathBuf::from(
+				"./test_starknet_projects/compiled_programs/invalid_odd_length_hex.json"
+			),
+		}
+		.exec()
+		.is_err());
 
-		assert!(
-			ExecuteArgs {
-				program: PathBuf::from(
-					"./test_starknet_projects/compiled_programs/invalid_even_length_hex.json"
-				),
-			}
-			.exec()
-			.is_err()
-		);
+		assert!(ExecuteArgs {
+			program: PathBuf::from(
+				"./test_starknet_projects/compiled_programs/invalid_even_length_hex.json"
+			),
+		}
+		.exec()
+		.is_err());
 	}
 }
