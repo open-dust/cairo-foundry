@@ -18,7 +18,7 @@ pub fn get_args() -> cli::Args {
 
 	match args_from_stdin {
 		Err(stdin_err) => {
-			// Rust trick to help with type system
+			// Rust trick to help with type system (not needed but helps rust-analyzer)
 			let stdin_err: clap::Error = stdin_err;
 
 			if stdin_err.kind() == clap::ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand {
@@ -33,7 +33,7 @@ pub fn get_args() -> cli::Args {
 
 				match args_from_config {
 					Err(cfg_err) => {
-						// Rust trick to help with type system
+						// Rust trick to help with type system (not needed but helps rust-analyzer)
 						let cfg_err: clap::Error = cfg_err;
 
 						// Error is NOT that the configuration file was empty, so something is
