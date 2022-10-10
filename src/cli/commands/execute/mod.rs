@@ -1,10 +1,8 @@
-use std::{fmt::Display, io::Write, path::PathBuf, str::from_utf8};
+mod compile;
+mod tests;
 
-use clap::{Args, ValueHint};
-use log::error;
-use serde::Serialize;
+use std::{collections::HashMap, fmt::Display, io::Write, path::PathBuf, str, str::from_utf8};
 
-use super::CommandExecution;
 use cairo_rs::{
 	cairo_run::cairo_run,
 	hint_processor::{
@@ -18,21 +16,27 @@ use cairo_rs::{
 	serde::deserialize_program::ApTracking,
 	vm::errors::vm_errors::VirtualMachineError,
 };
-use std::collections::HashMap;
+use clap::{Args, ValueHint};
+use log::error;
+use serde::Serialize;
+
+use super::CommandExecution;
+
+use compile::compile;
 
 #[derive(Args, Debug)]
 pub struct ExecuteArgs {
-	/// Path to a json compiled cairo program
-	#[clap(short, long, value_hint=ValueHint::FilePath, value_parser=is_json)]
-	program: PathBuf,
+	/// Path to a cairo program
+	#[clap(short, long, value_hint=ValueHint::FilePath, value_parser=is_cairo)]
+	pub program: PathBuf,
 }
 
-fn is_json(path: &str) -> Result<PathBuf, String> {
+fn is_cairo(path: &str) -> Result<PathBuf, String> {
 	let path = PathBuf::from(path);
 	if path.exists() && path.is_file() {
 		match path.extension() {
-			Some(ext) if ext == "json" => Ok(path),
-			_ => Err(format!("\"{}\" is not a json file", path.display())),
+			Some(ext) if ext == "cairo" => Ok(path),
+			_ => Err(format!("\"{}\" is not a cairo file", path.display())),
 		}
 	} else {
 		Err(format!("\"{}\" is not a valid file", path.display()))
@@ -72,8 +76,12 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 		let mut hint_processor = BuiltinHintProcessor::new_empty();
 		hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
 
-		let mut cairo_runner =
-			cairo_run(&self.program, "main", false, &hint_processor).map_err(|e| {
+		// Call the compile function
+		let compiled_program_path = compile(&self.program);
+
+		// Run the main function of cairo contract
+		let mut cairo_runner = cairo_run(&compiled_program_path, "main", false, &hint_processor)
+			.map_err(|e| {
 				format!(
 					"failed to run the program \"{}\": {}",
 					self.program.display(),
@@ -86,7 +94,7 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 		cairo_runner.write_output(&mut output).map_err(|e| {
 			format!(
 				"failed to print the program output \"{}\": {}",
-				self.program.display(),
+				compiled_program_path.display(),
 				e,
 			)
 		})?;
@@ -105,62 +113,4 @@ fn greater_than_hint(
 	let b = get_integer_from_var_name("b", vm_proxy, ids_data, ap_tracking)?;
 	println!("{}", a > b);
 	Ok(())
-}
-
-#[cfg(test)]
-mod test {
-	use super::*;
-	#[test]
-	fn valid_programs() {
-		assert!(
-			ExecuteArgs {
-				program: PathBuf::from(
-					"./test_starknet_projects/compiled_programs/valid_program_a.json"
-				),
-			}
-			.exec()
-			.is_ok()
-		);
-
-		assert!(
-			ExecuteArgs {
-				program: PathBuf::from(
-					"./test_starknet_projects/compiled_programs/valid_program_b.json"
-				),
-			}
-			.exec()
-			.is_ok()
-		);
-
-		assert!(
-			ExecuteArgs {
-				program: PathBuf::from("./test_starknet_projects/hint_assertion/custom_hint.json"),
-			}
-			.exec()
-			.is_ok()
-		);
-	}
-
-	#[test]
-	fn invalid_programs() {
-		assert!(
-			ExecuteArgs {
-				program: PathBuf::from(
-					"./test_starknet_projects/compiled_programs/invalid_odd_length_hex.json"
-				),
-			}
-			.exec()
-			.is_err()
-		);
-
-		assert!(
-			ExecuteArgs {
-				program: PathBuf::from(
-					"./test_starknet_projects/compiled_programs/invalid_even_length_hex.json"
-				),
-			}
-			.exec()
-			.is_err()
-		);
-	}
 }

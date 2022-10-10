@@ -9,10 +9,7 @@ where
 	Output: Serialize,
 {
 	fn format(&self, output: &Output) -> String {
-		format!(
-			"{}",
-			serde_json::to_string(&output).expect("Unable to format output to JSON")
-		)
+		serde_json::to_string(&output).expect("Unable to format output to JSON")
 	}
 }
 
