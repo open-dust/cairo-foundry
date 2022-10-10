@@ -1,4 +1,5 @@
 mod compile;
+#[cfg(test)]
 mod tests;
 
 use std::{collections::HashMap, fmt::Display, io::Write, path::PathBuf, str, str::from_utf8};

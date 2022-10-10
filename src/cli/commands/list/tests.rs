@@ -5,15 +5,16 @@ use std::path::PathBuf;
 #[test]
 fn list_test_files_recursively() {
 	let result = ListArgs {
-		root: PathBuf::from("./test_starknet_projects"),
+		root: PathBuf::from("./test_cairo_contracts"),
 	}
 	.exec();
 
 	assert!(result.is_ok(), "{}", result.unwrap_err());
 	assert_eq!(
 		vec![
-			PathBuf::from("./test_starknet_projects/no_builtin/test_contract.cairo"),
-			PathBuf::from("./test_starknet_projects/with_HashBuiltin/test_contract.cairo")
+			PathBuf::from("./test_cairo_contracts/test_hint_greater_than_false.cairo"),
+			PathBuf::from("./test_cairo_contracts/test_invalid_program.cairo"),
+			PathBuf::from("./test_cairo_contracts/test_valid_program.cairo"),
 		],
 		result.unwrap().files
 	)
