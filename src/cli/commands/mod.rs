@@ -7,6 +7,8 @@ use std::fmt;
 mod execute;
 /// list module: contains everything related to the `List` command
 mod list;
+// test module: contains everything related to the `Test` command
+mod test;
 
 /// Enum of all supported commands
 #[derive(Subcommand)]
@@ -15,6 +17,8 @@ pub enum Commands {
 	List(list::ListArgs),
 	/// Execute compiled cairo program
 	Execute(execute::ExecuteArgs),
+	// Test cairo programs
+	Test(test::TestArgs),
 }
 
 /// Bahaviour of a command
@@ -25,6 +29,7 @@ pub trait CommandExecution<F: Formattable> {
 enum CommandOutputs {
 	List(list::ListOutput),
 	Execute(execute::ExecuteOutput),
+	Test(test::TestOutput),
 }
 
 /// The executed command output
@@ -38,6 +43,7 @@ impl Serialize for Output {
 		match &self.0 {
 			CommandOutputs::List(output) => output.serialize(serializer),
 			CommandOutputs::Execute(output) => output.serialize(serializer),
+			CommandOutputs::Test(output) => output.serialize(serializer),
 		}
 	}
 }
@@ -47,6 +53,7 @@ impl fmt::Display for Output {
 		match &self.0 {
 			CommandOutputs::List(output) => output.fmt(f),
 			CommandOutputs::Execute(output) => output.fmt(f),
+			CommandOutputs::Test(output) => output.fmt(f),
 		}
 	}
 }
@@ -56,6 +63,7 @@ impl CommandExecution<Output> for Commands {
 		match &self {
 			Commands::List(args) => args.exec().map(|o| Output(CommandOutputs::List(o))),
 			Commands::Execute(args) => args.exec().map(|o| Output(CommandOutputs::Execute(o))),
+			Commands::Test(args) => args.exec().map(|o| Output(CommandOutputs::Test(o))),
 		}
 	}
 }

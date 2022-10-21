@@ -34,3 +34,63 @@ func main{output_ptr: felt*}() {
 
     return ();
 }
+
+func test_array_sum_positive{output_ptr: felt*}() {
+    const ARRAY_SIZE = 3;
+
+    // Allocate an array.
+    let (ptr) = alloc();
+
+    // Populate some values in the array.
+    assert [ptr] = 9;
+    assert [ptr + 1] = 16;
+    assert [ptr + 2] = 25;
+
+    // Call array_sum to compute the sum of the elements.
+    let sum = array_sum(arr=ptr, size=ARRAY_SIZE);
+    assert sum = 50;
+    // Write the sum to the program output.
+    serialize_word(sum);
+
+    return ();
+}
+
+func test_array_sum_positive2{output_ptr: felt*}() {
+    const ARRAY_SIZE = 3;
+
+    // Allocate an array.
+    let (ptr) = alloc();
+
+    // Populate some values in the array.
+    assert [ptr] = 9;
+    assert [ptr + 1] = 16;
+    assert [ptr + 2] = 30;
+
+    // Call array_sum to compute the sum of the elements.
+    let sum = array_sum(arr=ptr, size=ARRAY_SIZE);
+    assert sum = 55;
+    // Write the sum to the program output.
+    serialize_word(sum);
+
+    return ();
+}
+
+func test_array_sum_negative{output_ptr: felt*}() {
+    const ARRAY_SIZE = 3;
+
+    // Allocate an array.
+    let (ptr) = alloc();
+
+    // Populate some values in the array.
+    assert [ptr] = 9;
+    assert [ptr + 1] = 16;
+    assert [ptr + 2] = 25;
+
+    // Call array_sum to compute the sum of the elements.
+    let sum = array_sum(arr=ptr, size=ARRAY_SIZE);
+    assert sum = 55;
+    // Write the sum to the program output.
+    serialize_word(sum);
+
+    return ();
+}
