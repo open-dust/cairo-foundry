@@ -19,12 +19,21 @@ const JSON_FILE_EXTENTION: &str = "json";
 /// let mut program = PathBuf::from("path_to_your_program");
 /// let compiled_program_path = compile(&program);
 /// ```
-pub fn compile(program: &PathBuf) -> PathBuf {
+pub fn compile(program: &PathBuf) -> Result<PathBuf, String> {
 	// Use cairo-compile binary in order to compile the .cairo file
 	let compiled_output = Command::new("cairo-compile")
 		.args([&program])
 		.output()
 		.expect("cairo-compile command failed to start");
+
+	// Check if the compilation was successful
+	if !compiled_output.status.success() {
+		return Err(format!(
+			"Compilation of {} failed: {:?}",
+			program.display(),
+			compiled_output
+		))
+	}
 
 	// Retrieve only the file name to create a clean compiled file name.
 	// Is safe to unwrap because the call to cairo-compile would have failed if program was not
@@ -45,5 +54,5 @@ pub fn compile(program: &PathBuf) -> PathBuf {
 	file.write_all(&compiled_output.stdout)
 		.expect("Failed to write the compiled program to disk");
 
-	compiled_program_path
+	Ok(compiled_program_path)
 }

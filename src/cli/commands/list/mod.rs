@@ -17,10 +17,10 @@ use super::CommandExecution;
 pub struct ListArgs {
 	/// Root path
 	#[clap(short, long, value_hint=ValueHint::DirPath, value_parser=path_is_valid_directory)]
-	root: PathBuf,
+	pub root: PathBuf,
 }
 
-fn path_is_valid_directory(path: &str) -> Result<PathBuf, String> {
+pub fn path_is_valid_directory(path: &str) -> Result<PathBuf, String> {
 	let path = PathBuf::from(path);
 	if path.exists() && path.is_dir() {
 		Ok(path)
@@ -33,7 +33,7 @@ fn path_is_valid_directory(path: &str) -> Result<PathBuf, String> {
 #[derive(Debug, Serialize)]
 pub struct ListOutput {
 	/// The list of test files found
-	files: Vec<PathBuf>,
+	pub files: Vec<PathBuf>,
 }
 
 impl fmt::Display for ListOutput {
