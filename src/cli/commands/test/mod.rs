@@ -28,7 +28,7 @@ use super::{
 	CommandExecution,
 };
 
-use crate::cli::commands::execute::compile::compile;
+use crate::compile::compile;
 
 #[derive(Args, Debug)]
 pub struct TestArgs {
@@ -106,41 +106,39 @@ impl CommandExecution<TestOutput> for TestArgs {
 		}
 		.exec();
 
-		let compiled_cairo_files: Vec<(PathBuf, Result<PathBuf, String>)> = list_of_cairo_files?
-			.files
-			.into_iter()
-			.map(|path| {
+		let iterator_over_compiled_cairo_files =
+			list_of_cairo_files?.files.into_iter().map(|path| {
 				let res_compilation = compile(&path);
 				(path, res_compilation)
-			})
-			.collect();
+			});
 
-		let entrypoints_by_file: Vec<(PathBuf, PathBuf, Vec<String>)> = compiled_cairo_files
-			.into_iter()
-			.filter_map(
-				|(path_to_original, res_compilation)| match res_compilation {
-					Ok(path_to_compiled) => {
-						let entrypoints = list_test_entrypoints(&path_to_compiled);
-						match entrypoints {
-							Ok(entrypoints) =>
-								Some((path_to_original, path_to_compiled, entrypoints)),
-							Err(e) => {
-								eprintln!(
-									"Failed to list test entrypoints for file {}: {}",
-									path_to_compiled.display(),
-									e
-								);
-								None
-							},
-						}
+		let entrypoints_by_file: Vec<(PathBuf, PathBuf, Vec<String>)> =
+			iterator_over_compiled_cairo_files
+				.into_iter()
+				.filter_map(
+					|(path_to_original, res_compilation)| match res_compilation {
+						Ok(path_to_compiled) => {
+							let entrypoints = list_test_entrypoints(&path_to_compiled);
+							match entrypoints {
+								Ok(entrypoints) =>
+									Some((path_to_original, path_to_compiled, entrypoints)),
+								Err(e) => {
+									eprintln!(
+										"Failed to list test entrypoints for file {}: {}",
+										path_to_compiled.display(),
+										e
+									);
+									None
+								},
+							}
+						},
+						Err(e) => {
+							eprintln!("Compilation output is not a valid JSON: {}", e);
+							None
+						},
 					},
-					Err(e) => {
-						eprintln!("Compilation output is not a valid JSON: {}", e);
-						None
-					},
-				},
-			)
-			.collect();
+				)
+				.collect();
 
 		// run each test entrypoint
 		for (path_to_original, path_to_compiled, test_entrypoints) in entrypoints_by_file {
