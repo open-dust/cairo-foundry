@@ -1,20 +1,13 @@
 #[cfg(test)]
 mod tests;
 
-use std::{collections::HashMap, fmt::Display, io::Write, path::PathBuf, str, str::from_utf8};
+use std::{fmt::Display, io::Write, path::PathBuf, str, str::from_utf8};
 
 use cairo_rs::{
 	cairo_run::cairo_run,
-	hint_processor::{
-		builtin_hint_processor::{
-			builtin_hint_processor_definition::{BuiltinHintProcessor, HintFunc},
-			hint_utils::get_integer_from_var_name,
-		},
-		hint_processor_definition::HintReference,
-		proxies::{exec_scopes_proxy::ExecutionScopesProxy, vm_proxy::VMProxy},
+	hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
+		BuiltinHintProcessor, HintFunc,
 	},
-	serde::deserialize_program::ApTracking,
-	vm::errors::vm_errors::VirtualMachineError,
 };
 use clap::{Args, ValueHint};
 use log::error;
@@ -22,7 +15,7 @@ use serde::Serialize;
 
 use super::CommandExecution;
 
-use crate::compile::compile;
+use crate::{compile::compile, hints::greater_than};
 
 #[derive(Args, Debug)]
 pub struct ExecuteArgs {
@@ -72,7 +65,7 @@ impl Display for ExecuteOutput {
 
 impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 	fn exec(&self) -> Result<ExecuteOutput, String> {
-		let hint = HintFunc(Box::new(greater_than_hint));
+		let hint = HintFunc(Box::new(greater_than));
 		let mut hint_processor = BuiltinHintProcessor::new_empty();
 		hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
 
@@ -101,16 +94,4 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 
 		Ok(output)
 	}
-}
-
-fn greater_than_hint(
-	vm_proxy: &mut VMProxy,
-	_exec_scopes_proxy: &mut ExecutionScopesProxy,
-	ids_data: &HashMap<String, HintReference>,
-	ap_tracking: &ApTracking,
-) -> Result<(), VirtualMachineError> {
-	let a = get_integer_from_var_name("a", vm_proxy, ids_data, ap_tracking)?;
-	let b = get_integer_from_var_name("b", vm_proxy, ids_data, ap_tracking)?;
-	println!("{}", a > b);
-	Ok(())
 }
