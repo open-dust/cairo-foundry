@@ -15,7 +15,10 @@ use serde::Serialize;
 
 use super::CommandExecution;
 
-use crate::{compile::compile, hints::greater_than};
+use crate::{
+	compile::compile,
+	hints::{greater_than, HINT_OUTPUT_BUFFER},
+};
 
 #[derive(Args, Debug)]
 pub struct ExecuteArgs {
@@ -81,6 +84,8 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 					e,
 				)
 			})?;
+
+		HINT_OUTPUT_BUFFER.lock().unwrap().flush().unwrap();
 
 		let mut output = ExecuteOutput(vec![]);
 
