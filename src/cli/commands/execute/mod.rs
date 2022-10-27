@@ -1,4 +1,3 @@
-pub mod compile;
 #[cfg(test)]
 mod tests;
 
@@ -23,7 +22,7 @@ use serde::Serialize;
 
 use super::CommandExecution;
 
-use compile::compile;
+use crate::compile::compile;
 
 #[derive(Args, Debug)]
 pub struct ExecuteArgs {
@@ -78,7 +77,7 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 		hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
 
 		// Call the compile function
-		let compiled_program_path = compile(&self.program)?;
+		let compiled_program_path = compile(&self.program).map_err(|e| e.to_string())?;
 
 		// Run the main function of cairo contract
 		let mut cairo_runner = cairo_run(&compiled_program_path, "main", false, &hint_processor)

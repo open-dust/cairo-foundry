@@ -6,3 +6,4 @@
  * Parses the argument list and execute the given sub-command
  */
 pub mod cli;
+pub mod compile;
