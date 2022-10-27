@@ -21,7 +21,10 @@ use super::{
 	CommandExecution,
 };
 
-use crate::{compile::compile, hints::greater_than};
+use crate::{
+	compile::compile,
+	hints::{greater_than, HINT_OUTPUT_BUFFER},
+};
 
 #[derive(Args, Debug)]
 pub struct TestArgs {
@@ -90,52 +93,54 @@ impl Display for TestOutput {
 
 impl CommandExecution<TestOutput> for TestArgs {
 	fn exec(&self) -> Result<TestOutput, String> {
+		// Declare hints
 		let hint = HintFunc(Box::new(greater_than));
 		let mut hint_processor = BuiltinHintProcessor::new_empty();
 		hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
 
+		// Recursively list cairo files
 		let list_of_cairo_files = ListArgs {
 			root: PathBuf::from(&self.root),
 		}
 		.exec();
 
+		// Try to compile those files
 		let iterator_over_compiled_cairo_files =
 			list_of_cairo_files?.files.into_iter().map(|path| {
 				let res_compilation = compile(&path);
 				(path, res_compilation)
 			});
 
+		// List test entrypoints for each compiled file
+		// (path_to_cairo_file, path_to_compiled_file, list of entrypoints)
 		let entrypoints_by_file: Vec<(PathBuf, PathBuf, Vec<String>)> =
 			iterator_over_compiled_cairo_files
 				.into_iter()
-				.filter_map(
-					|(path_to_original, res_compilation)| match res_compilation {
-						Ok(path_to_compiled) => {
-							let entrypoints = list_test_entrypoints(&path_to_compiled);
-							match entrypoints {
-								Ok(entrypoints) =>
-									Some((path_to_original, path_to_compiled, entrypoints)),
-								Err(e) => {
-									eprintln!(
-										"Failed to list test entrypoints for file {}: {}",
-										path_to_compiled.display(),
-										e
-									);
-									None
-								},
-							}
-						},
-						Err(e) => {
-							eprintln!("Compilation output is not a valid JSON: {}", e);
-							None
-						},
+				.filter_map(|(path_to_code, res_compilation)| match res_compilation {
+					Ok(path_to_compiled) => {
+						let entrypoints = list_test_entrypoints(&path_to_compiled);
+						match entrypoints {
+							Ok(entrypoints) => Some((path_to_code, path_to_compiled, entrypoints)),
+							Err(e) => {
+								eprintln!(
+									"Failed to list test entrypoints for file {}: {}",
+									path_to_compiled.display(),
+									e
+								);
+								None
+							},
+						}
 					},
-				)
+					Err(e) => {
+						eprintln!("Compilation output is not a valid JSON: {}", e);
+						None
+					},
+				})
 				.collect();
 
-		// run each test entrypoint
+		// Run each test
 		for (path_to_original, path_to_compiled, test_entrypoints) in entrypoints_by_file {
-			println!("\nRunning tests in file {}", path_to_original.display());
+			println!("Running tests in file {}", path_to_original.display());
 			for test_entrypoint in test_entrypoints {
 				let cairo_runner =
 					cairo_run(&path_to_compiled, &test_entrypoint, false, &hint_processor);
@@ -150,17 +155,28 @@ impl CommandExecution<TestOutput> for TestArgs {
 					},
 				};
 
+				// Purge the hint output buffer
+				let mut hint_output_buffer = HINT_OUTPUT_BUFFER.lock().unwrap();
+				if !hint_output_buffer.buffer().is_empty() {
+					println!("[{}]:", "captured stdout".blue());
+					hint_output_buffer.flush().unwrap();
+				}
+				drop(hint_output_buffer);
+				println!();
+
+				// Display the exectution output if present
 				if let Some(runner_output) = result
 					.get_output()
 					.map_err(|e| format!("failed to get output from the cairo runner: {e}"))?
 				{
 					if !runner_output.is_empty() {
-						println!("[{}]", "execution output".blue());
+						println!("[{}]:", "execution output".purple());
 						println!("{runner_output}",);
 					}
 				}
 			}
 		}
+
 		Ok(Default::default())
 	}
 }
