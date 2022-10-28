@@ -9,32 +9,32 @@ use cairo_rs::{
 };
 use lazy_static::lazy_static;
 use num_traits::cast::ToPrimitive;
-use std::{collections::HashMap, io::Write, sync::RwLock};
+use std::{collections::HashMap, sync::RwLock};
 use uuid::Uuid;
 
 pub const EXECUTION_UUID_VAR_NAME: &str = "cairo-foundry-execution-uuid";
 
 lazy_static! {
-	static ref HINT_OUTPUT_BUFFER: RwLock<HashMap<Uuid, Vec<u8>>> = RwLock::new(HashMap::new());
+	static ref HINT_OUTPUT_BUFFER: RwLock<HashMap<Uuid, String>> = RwLock::new(HashMap::new());
 }
 
 pub fn init_buffer(execution_uuid: Uuid) {
-	HINT_OUTPUT_BUFFER.write().unwrap().insert(execution_uuid, Vec::new());
+	HINT_OUTPUT_BUFFER.write().unwrap().insert(execution_uuid, String::new());
 }
 
 pub fn clear_buffer(execution_uuid: &Uuid) {
 	HINT_OUTPUT_BUFFER.write().unwrap().remove(execution_uuid);
 }
 
-pub fn get_buffer(execution_uuid: &Uuid) -> Option<Vec<u8>> {
+pub fn get_buffer(execution_uuid: &Uuid) -> Option<String> {
 	HINT_OUTPUT_BUFFER.read().unwrap().get(execution_uuid).cloned()
 }
 
-fn write_to_output_buffer(execution_uuid: &Uuid, data: &[u8]) {
+fn write_to_output_buffer(execution_uuid: &Uuid, data: &str) {
 	let mut hashmap_lock = HINT_OUTPUT_BUFFER.write().unwrap();
 	let opt_buffer = hashmap_lock.get_mut(execution_uuid);
 	if let Some(buffer) = opt_buffer {
-		buffer.write_all(data).unwrap();
+		buffer.push_str(data);
 	}
 }
 
@@ -49,6 +49,6 @@ pub fn greater_than(
 	let execution_uuid = Uuid::from_u128(
 		exec_scopes_proxy.get_int(EXECUTION_UUID_VAR_NAME).unwrap().to_u128().unwrap(),
 	);
-	write_to_output_buffer(&execution_uuid, format!("{}\n", a > b).as_bytes());
+	write_to_output_buffer(&execution_uuid, &format!("{}\n", a > b));
 	Ok(())
 }

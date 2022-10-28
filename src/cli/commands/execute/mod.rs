@@ -7,6 +7,7 @@ use cairo_rs::hint_processor::builtin_hint_processor::builtin_hint_processor_def
 	BuiltinHintProcessor, HintFunc,
 };
 use clap::{Args, ValueHint};
+use colored::Colorize;
 use log::error;
 use serde::Serialize;
 use uuid::Uuid;
@@ -16,7 +17,7 @@ use super::CommandExecution;
 use crate::{
 	cairo_run::cairo_run,
 	compile::compile,
-	hints::{get_buffer, greater_than, init_buffer},
+	hints::{clear_buffer, get_buffer, greater_than, init_buffer},
 };
 
 #[derive(Args, Debug)]
@@ -92,9 +93,21 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 			)
 		})?;
 
-		get_buffer(&execution_uuid).unwrap().flush().unwrap();
-
 		let mut output = ExecuteOutput(vec![]);
+
+		let buffer = get_buffer(&execution_uuid).unwrap();
+		if !buffer.is_empty() {
+			output
+				.write_all(format!("[{}]:\n{}", "captured stdout".blue(), buffer).as_bytes())
+				.map_err(|e| {
+					format!(
+						"failed to print the program hints output \"{}\": {}",
+						compiled_program_path.display(),
+						e,
+					)
+				})?;
+		}
+		clear_buffer(&execution_uuid);
 
 		cairo_runner.write_output(&mut output).map_err(|e| {
 			format!(
