@@ -67,3 +67,13 @@ pub fn skip(
 ) -> Result<(), VirtualMachineError> {
 	Err(VirtualMachineError::CustomHint("skip".to_string()))
 }
+
+pub fn mock_call(
+	_vm: &mut VirtualMachine,
+	_exec_scopes: &mut ExecutionScopes,
+	_ids_data: &HashMap<String, HintReference>,
+	_ap_tracking: &ApTracking,
+	_constants: &HashMap<String, BigInt>,
+) -> Result<(), VirtualMachineError> {
+	Ok(())
+}
