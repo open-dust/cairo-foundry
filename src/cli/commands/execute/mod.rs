@@ -3,21 +3,20 @@ mod tests;
 
 use std::{fmt::Display, io::Write, path::PathBuf, str, str::from_utf8};
 
-use cairo_rs::{
-	cairo_run::cairo_run,
-	hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
-		BuiltinHintProcessor, HintFunc,
-	},
+use cairo_rs::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
+	BuiltinHintProcessor, HintFunc,
 };
 use clap::{Args, ValueHint};
 use log::error;
 use serde::Serialize;
+use uuid::Uuid;
 
 use super::CommandExecution;
 
 use crate::{
+	cairo_run::cairo_run,
 	compile::compile,
-	hints::{greater_than, HINT_OUTPUT_BUFFER},
+	hints::{get_buffer, greater_than, init_buffer},
 };
 
 #[derive(Args, Debug)]
@@ -75,17 +74,25 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 		// Call the compile function
 		let compiled_program_path = compile(&self.program).map_err(|e| e.to_string())?;
 
+		let execution_uuid = Uuid::new_v4();
+		init_buffer(execution_uuid);
 		// Run the main function of cairo contract
-		let mut cairo_runner = cairo_run(&compiled_program_path, "main", false, &hint_processor)
-			.map_err(|e| {
-				format!(
-					"failed to run the program \"{}\": {}",
-					self.program.display(),
-					e,
-				)
-			})?;
+		let mut cairo_runner = cairo_run(
+			&compiled_program_path,
+			"main",
+			false,
+			&hint_processor,
+			Default::default(),
+		)
+		.map_err(|e| {
+			format!(
+				"failed to run the program \"{}\": {}",
+				self.program.display(),
+				e,
+			)
+		})?;
 
-		HINT_OUTPUT_BUFFER.lock().unwrap().flush().unwrap();
+		get_buffer(&execution_uuid).unwrap().lock().unwrap().flush().unwrap();
 
 		let mut output = ExecuteOutput(vec![]);
 
