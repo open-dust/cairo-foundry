@@ -3,27 +3,26 @@ mod tests;
 
 use regex::Regex;
 
-use cairo_rs::{
-	cairo_run::cairo_run,
-	hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
-		BuiltinHintProcessor, HintFunc,
-	},
+use cairo_rs::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
+	BuiltinHintProcessor, HintFunc,
 };
 use clap::{Args, ValueHint};
 use colored::Colorize;
-use log::error;
+use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
-use std::{fmt::Display, fs, io::Write, path::PathBuf, str::from_utf8};
+use std::{fmt::Display, fs, path::PathBuf};
+use uuid::Uuid;
 
 use super::{
-	list::{path_is_valid_directory, ListArgs},
+	list::{path_is_valid_directory, ListArgs, ListOutput},
 	CommandExecution,
 };
 
 use crate::{
+	cairo_run::cairo_run,
 	compile::compile,
-	hints::{greater_than, HINT_OUTPUT_BUFFER},
+	hints::{clear_buffer, get_buffer, greater_than, init_buffer},
 };
 
 #[derive(Args, Debug)]
@@ -66,117 +65,142 @@ fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, String>
 
 /// Execute command output
 #[derive(Debug, Serialize, Default)]
-pub struct TestOutput(Vec<u8>);
-
-impl Write for TestOutput {
-	fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-		self.0.write(buf)
-	}
-
-	fn flush(&mut self) -> std::io::Result<()> {
-		self.0.flush()
-	}
-}
+pub struct TestOutput(String);
 
 impl Display for TestOutput {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(
-			f,
-			"{}",
-			from_utf8(&self.0).map_err(|e| {
-				error!("failed to format the execution output due to invalid utf8 encodig: {e}");
-				std::fmt::Error
-			})?
-		)
+		write!(f, "{}", &self.0)
 	}
+}
+
+fn setup_hint_processor() -> BuiltinHintProcessor {
+	let hint = HintFunc(Box::new(greater_than));
+	let mut hint_processor = BuiltinHintProcessor::new_empty();
+	hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
+	hint_processor
+}
+
+fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, String> {
+	ListArgs {
+		root: PathBuf::from(root),
+	}
+	.exec()
+	.map(|cmd_output: ListOutput| cmd_output.files)
+}
+
+fn compile_and_list_entrypoints(path_to_code: PathBuf) -> Option<(PathBuf, PathBuf, Vec<String>)> {
+	match compile(&path_to_code) {
+		Ok(path_to_compiled) => match list_test_entrypoints(&path_to_compiled) {
+			Ok(entrypoints) => Some((path_to_code, path_to_compiled, entrypoints)),
+			Err(e) => {
+				eprintln!(
+					"Failed to list test entrypoints for file {}: {}",
+					path_to_compiled.display(),
+					e
+				);
+				None
+			},
+		},
+		Err(e) => {
+			eprintln!("{}", e);
+			None
+		},
+	}
+}
+
+fn run_tests_for_one_file(
+	hint_processor: &BuiltinHintProcessor,
+	path_to_original: PathBuf,
+	path_to_compiled: PathBuf,
+	test_entrypoints: Vec<String>,
+) -> String {
+	let tests_output = test_entrypoints
+		.into_par_iter()
+		.map(|test_entrypoint| {
+			let mut output = String::new();
+			let execution_uuid = Uuid::new_v4();
+			init_buffer(execution_uuid);
+			let cairo_runner = cairo_run(
+				&path_to_compiled,
+				&test_entrypoint,
+				false,
+				hint_processor,
+				execution_uuid,
+			);
+			let mut result = match cairo_runner {
+				Ok(res) => {
+					output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
+					res
+				},
+				Err(_) => {
+					output.push_str(&format!("[{}] {}\n", "FAILED".red(), test_entrypoint));
+					return output
+				},
+			};
+
+			// Purge the hint output buffer
+			let ref_buffer = get_buffer(&execution_uuid).unwrap();
+			let buffer = ref_buffer.lock().unwrap();
+			if !buffer.is_empty() {
+				output.push_str(&format!(
+					"[{}]:\n{}",
+					"captured stdout".blue(),
+					String::from_utf8(buffer.to_vec()).unwrap()
+				));
+			}
+			drop(buffer);
+			clear_buffer(&execution_uuid);
+
+			// Display the exectution output if present
+			match result.get_output() {
+				Ok(Some(runner_output)) =>
+					if !runner_output.is_empty() {
+						output.push_str(&format!(
+							"[{}]:\n{}",
+							"execution output".purple(),
+							&runner_output
+						));
+					},
+				Ok(None) => {}, // Cannot happen due to cairo-rs implem
+				Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
+			};
+
+			output.push('\n');
+			output
+		})
+		.reduce(String::new, |mut a, b| {
+			a.push_str(&b);
+			a
+		});
+
+	format!(
+		"Running tests in file {}\n{}",
+		path_to_original.display(),
+		tests_output
+	)
 }
 
 impl CommandExecution<TestOutput> for TestArgs {
 	fn exec(&self) -> Result<TestOutput, String> {
 		// Declare hints
-		let hint = HintFunc(Box::new(greater_than));
-		let mut hint_processor = BuiltinHintProcessor::new_empty();
-		hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
+		let hint_processor = setup_hint_processor();
 
-		// Recursively list cairo files
-		let list_of_cairo_files = ListArgs {
-			root: PathBuf::from(&self.root),
-		}
-		.exec();
-
-		// Try to compile those files
-		let iterator_over_compiled_cairo_files =
-			list_of_cairo_files?.files.into_iter().map(|path| {
-				let res_compilation = compile(&path);
-				(path, res_compilation)
+		let output = list_cairo_files(&self.root)?
+			.into_par_iter()
+			.filter_map(compile_and_list_entrypoints)
+			.map(|(path_to_original, path_to_compiled, test_entrypoints)| {
+				run_tests_for_one_file(
+					&hint_processor,
+					path_to_original,
+					path_to_compiled,
+					test_entrypoints,
+				)
+			})
+			.reduce(String::new, |mut a, b| {
+				a.push_str(&b);
+				a
 			});
 
-		// List test entrypoints for each compiled file
-		// (path_to_cairo_file, path_to_compiled_file, list of entrypoints)
-		let entrypoints_by_file: Vec<(PathBuf, PathBuf, Vec<String>)> =
-			iterator_over_compiled_cairo_files
-				.into_iter()
-				.filter_map(|(path_to_code, res_compilation)| match res_compilation {
-					Ok(path_to_compiled) => {
-						let entrypoints = list_test_entrypoints(&path_to_compiled);
-						match entrypoints {
-							Ok(entrypoints) => Some((path_to_code, path_to_compiled, entrypoints)),
-							Err(e) => {
-								eprintln!(
-									"Failed to list test entrypoints for file {}: {}",
-									path_to_compiled.display(),
-									e
-								);
-								None
-							},
-						}
-					},
-					Err(e) => {
-						eprintln!("Compilation output is not a valid JSON: {}", e);
-						None
-					},
-				})
-				.collect();
-
-		// Run each test
-		for (path_to_original, path_to_compiled, test_entrypoints) in entrypoints_by_file {
-			println!("Running tests in file {}", path_to_original.display());
-			for test_entrypoint in test_entrypoints {
-				let cairo_runner =
-					cairo_run(&path_to_compiled, &test_entrypoint, false, &hint_processor);
-				let mut result = match cairo_runner {
-					Ok(res) => {
-						println!("[{}] {}", "OK".green(), test_entrypoint);
-						res
-					},
-					Err(_) => {
-						println!("[{}] {}", "FAILED".red(), test_entrypoint);
-						continue
-					},
-				};
-
-				// Purge the hint output buffer
-				let mut hint_output_buffer = HINT_OUTPUT_BUFFER.lock().unwrap();
-				if !hint_output_buffer.buffer().is_empty() {
-					println!("[{}]:", "captured stdout".blue());
-					hint_output_buffer.flush().unwrap();
-				}
-				drop(hint_output_buffer);
-				println!();
-
-				// Display the exectution output if present
-				if let Some(runner_output) = result
-					.get_output()
-					.map_err(|e| format!("failed to get output from the cairo runner: {e}"))?
-				{
-					if !runner_output.is_empty() {
-						println!("[{}]:", "execution output".purple());
-						println!("{runner_output}",);
-					}
-				}
-			}
-		}
-
-		Ok(Default::default())
+		Ok(TestOutput(output))
 	}
 }
