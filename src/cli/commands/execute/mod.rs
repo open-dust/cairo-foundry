@@ -92,7 +92,7 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 			)
 		})?;
 
-		get_buffer(&execution_uuid).unwrap().lock().unwrap().flush().unwrap();
+		get_buffer(&execution_uuid).unwrap().flush().unwrap();
 
 		let mut output = ExecuteOutput(vec![]);
 

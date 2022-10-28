@@ -139,8 +139,7 @@ fn run_tests_for_one_file(
 			};
 
 			// Purge the hint output buffer
-			let ref_buffer = get_buffer(&execution_uuid).unwrap();
-			let buffer = ref_buffer.lock().unwrap();
+			let buffer = get_buffer(&execution_uuid).unwrap();
 			if !buffer.is_empty() {
 				output.push_str(&format!(
 					"[{}]:\n{}",
@@ -148,7 +147,6 @@ fn run_tests_for_one_file(
 					String::from_utf8(buffer.to_vec()).unwrap()
 				));
 			}
-			drop(buffer);
 			clear_buffer(&execution_uuid);
 
 			// Display the exectution output if present
