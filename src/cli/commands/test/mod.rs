@@ -3,8 +3,11 @@ mod tests;
 
 use regex::Regex;
 
-use cairo_rs::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
-	BuiltinHintProcessor, HintFunc,
+use cairo_rs::{
+	hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
+		BuiltinHintProcessor, HintFunc,
+	},
+	vm::errors::{cairo_run_errors::CairoRunError, vm_errors::VirtualMachineError},
 };
 use clap::{Args, ValueHint};
 use colored::Colorize;
@@ -22,7 +25,7 @@ use super::{
 use crate::{
 	cairo_run::cairo_run,
 	compile::compile,
-	hints::{clear_buffer, get_buffer, greater_than, init_buffer},
+	hints::{clear_buffer, get_buffer, greater_than, init_buffer, skip},
 };
 
 #[derive(Args, Debug)]
@@ -74,9 +77,11 @@ impl Display for TestOutput {
 }
 
 fn setup_hint_processor() -> BuiltinHintProcessor {
-	let hint = HintFunc(Box::new(greater_than));
+	let greater_than_hint = HintFunc(Box::new(greater_than));
+	let skip_hint = HintFunc(Box::new(skip));
 	let mut hint_processor = BuiltinHintProcessor::new_empty();
-	hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
+	hint_processor.add_hint(String::from("print(ids.a > ids.b)"), greater_than_hint);
+	hint_processor.add_hint(String::from("skip()"), skip_hint);
 	hint_processor
 }
 
@@ -108,6 +113,15 @@ fn compile_and_list_entrypoints(path_to_code: PathBuf) -> Option<(PathBuf, PathB
 	}
 }
 
+fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
+	// Safe to unwrap as long as `init_buffer` has been called before
+	let buffer = get_buffer(execution_uuid).unwrap();
+	if !buffer.is_empty() {
+		output.push_str(&format!("[{}]:\n{}", "captured stdout".blue(), buffer));
+	}
+	clear_buffer(execution_uuid);
+}
+
 fn run_tests_for_one_file(
 	hint_processor: &BuiltinHintProcessor,
 	path_to_original: PathBuf,
@@ -128,24 +142,32 @@ fn run_tests_for_one_file(
 				hint_processor,
 				execution_uuid,
 			);
-			let (mut runner, mut vm) = match res_cairo_run {
+			let opt_runner_and_output = match res_cairo_run {
 				Ok(res) => {
 					output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
-					res
+					Some(res)
 				},
-				Err(_) => {
-					output.push_str(&format!("[{}] {}\n", "FAILED".red(), test_entrypoint));
-					return output
+				Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
+					custom_error_message,
+				))) if custom_error_message == "skip" => {
+					output.push_str(&format!("[{}] {}\n", "SKIPPED".yellow(), test_entrypoint,));
+					None
+				},
+				Err(e) => {
+					output.push_str(&format!(
+						"[{}] {}\nError: {}\n\n",
+						"FAILED".red(),
+						test_entrypoint,
+						e
+					));
+					None
 				},
 			};
-
-			// Purge the hint output buffer
-			// Safe to unwrap as long as `init_buffer` has been called before
-			let buffer = get_buffer(&execution_uuid).unwrap();
-			if !buffer.is_empty() {
-				output.push_str(&format!("[{}]:\n{}", "captured stdout".blue(), buffer));
-			}
-			clear_buffer(&execution_uuid);
+			purge_hint_buffer(&execution_uuid, &mut output);
+			let (mut runner, mut vm) = match opt_runner_and_output {
+				Some(runner_and_vm) => runner_and_vm,
+				None => return output,
+			};
 
 			// Display the exectution output if present
 			match runner.get_output(&mut vm) {

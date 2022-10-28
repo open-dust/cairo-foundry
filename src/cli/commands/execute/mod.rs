@@ -3,9 +3,7 @@ mod tests;
 
 use std::{fmt::Display, io::Write, path::PathBuf, str, str::from_utf8};
 
-use cairo_rs::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
-	BuiltinHintProcessor, HintFunc,
-};
+use cairo_rs::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::BuiltinHintProcessor;
 use clap::{Args, ValueHint};
 use colored::Colorize;
 use log::error;
@@ -17,7 +15,7 @@ use super::CommandExecution;
 use crate::{
 	cairo_run::cairo_run,
 	compile::compile,
-	hints::{clear_buffer, get_buffer, greater_than, init_buffer},
+	hints::{clear_buffer, get_buffer, init_buffer},
 };
 
 #[derive(Args, Debug)]
@@ -68,10 +66,6 @@ impl Display for ExecuteOutput {
 
 impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 	fn exec(&self) -> Result<ExecuteOutput, String> {
-		let hint = HintFunc(Box::new(greater_than));
-		let mut hint_processor = BuiltinHintProcessor::new_empty();
-		hint_processor.add_hint(String::from("print(ids.a > ids.b)"), hint);
-
 		// Call the compile function
 		let compiled_program_path = compile(&self.program).map_err(|e| e.to_string())?;
 
@@ -83,7 +77,7 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 			"main",
 			false,
 			false,
-			&hint_processor,
+			&BuiltinHintProcessor::new_empty(),
 			Default::default(),
 		)
 		.map_err(|e| {

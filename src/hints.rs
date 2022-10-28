@@ -40,17 +40,27 @@ fn write_to_output_buffer(execution_uuid: &Uuid, data: &str) {
 }
 
 pub fn greater_than(
-	vm_proxy: &mut VirtualMachine,
-	exec_scopes_proxy: &mut ExecutionScopes,
+	vm: &mut VirtualMachine,
+	exec_scopes: &mut ExecutionScopes,
 	ids_data: &HashMap<String, HintReference>,
 	ap_tracking: &ApTracking,
 	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
-	let a = get_integer_from_var_name("a", vm_proxy, ids_data, ap_tracking)?;
-	let b = get_integer_from_var_name("b", vm_proxy, ids_data, ap_tracking)?;
-	let execution_uuid = Uuid::from_u128(
-		exec_scopes_proxy.get_int(EXECUTION_UUID_VAR_NAME).unwrap().to_u128().unwrap(),
-	);
+	let a = get_integer_from_var_name("a", vm, ids_data, ap_tracking)?;
+	let b = get_integer_from_var_name("b", vm, ids_data, ap_tracking)?;
+
+	let execution_uuid =
+		Uuid::from_u128(exec_scopes.get_int(EXECUTION_UUID_VAR_NAME).unwrap().to_u128().unwrap());
 	write_to_output_buffer(&execution_uuid, &format!("{}\n", a > b));
 	Ok(())
+}
+
+pub fn skip(
+	_vm: &mut VirtualMachine,
+	_exec_scopes: &mut ExecutionScopes,
+	_ids_data: &HashMap<String, HintReference>,
+	_ap_tracking: &ApTracking,
+	_constants: &HashMap<String, BigInt>,
+) -> Result<(), VirtualMachineError> {
+	Err(VirtualMachineError::CustomHint("skip".to_string()))
 }
