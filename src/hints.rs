@@ -64,3 +64,20 @@ pub fn skip(
 ) -> Result<(), VirtualMachineError> {
 	Err(VirtualMachineError::CustomHint("skip".to_string()))
 }
+
+pub fn assert_revert(
+	vm: &mut VirtualMachine,
+	_exec_scopes: &mut ExecutionScopes,
+	_ids_data: &HashMap<String, HintReference>,
+	_ap_tracking: &ApTracking,
+	_constants: &HashMap<String, BigInt>,
+) -> Result<(), VirtualMachineError> {
+	match vm.step_instruction() {
+		Ok(_) => Err(VirtualMachineError::CustomHint(
+			"assert_revert_did_not_reverted".to_string(),
+		)),
+		Err(_) => Err(VirtualMachineError::CustomHint(
+			"assert_revert_revert".to_string(),
+		)),
+	}
+}

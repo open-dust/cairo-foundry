@@ -25,7 +25,7 @@ use super::{
 use crate::{
 	cairo_run::cairo_run,
 	compile::compile,
-	hints::{clear_buffer, get_buffer, greater_than, init_buffer, skip},
+	hints::{assert_revert, clear_buffer, get_buffer, greater_than, init_buffer, skip},
 };
 
 #[derive(Args, Debug)]
@@ -79,9 +79,11 @@ impl Display for TestOutput {
 fn setup_hint_processor() -> BuiltinHintProcessor {
 	let greater_than_hint = HintFunc(Box::new(greater_than));
 	let skip_hint = HintFunc(Box::new(skip));
+	let assert_revert_hint = HintFunc(Box::new(assert_revert));
 	let mut hint_processor = BuiltinHintProcessor::new_empty();
 	hint_processor.add_hint(String::from("print(ids.a > ids.b)"), greater_than_hint);
 	hint_processor.add_hint(String::from("skip()"), skip_hint);
+	hint_processor.add_hint(String::from("assert_revert()"), assert_revert_hint);
 	hint_processor
 }
 
@@ -151,6 +153,22 @@ fn run_tests_for_one_file(
 					custom_error_message,
 				))) if custom_error_message == "skip" => {
 					output.push_str(&format!("[{}] {}\n", "SKIPPED".yellow(), test_entrypoint,));
+					None
+				},
+				Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
+					custom_error_message,
+				))) if custom_error_message == "assert_revert_reverted" => {
+					output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
+					None
+				},
+				Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
+					custom_error_message,
+				))) if custom_error_message == "assert_revert_did_not_revert" => {
+					output.push_str(&format!(
+						"[{}] {}\nError: execution did not revert while assert_revert() was specified\n\n",
+						"FAILED".red(),
+						test_entrypoint,
+					));
 					None
 				},
 				Err(e) => {
