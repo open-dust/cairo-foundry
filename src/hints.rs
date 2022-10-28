@@ -2,12 +2,13 @@ use cairo_rs::{
 	hint_processor::{
 		builtin_hint_processor::hint_utils::get_integer_from_var_name,
 		hint_processor_definition::HintReference,
-		proxies::{exec_scopes_proxy::ExecutionScopesProxy, vm_proxy::VMProxy},
 	},
 	serde::deserialize_program::ApTracking,
-	vm::errors::vm_errors::VirtualMachineError,
+	types::exec_scope::ExecutionScopes,
+	vm::{errors::vm_errors::VirtualMachineError, vm_core::VirtualMachine},
 };
 use lazy_static::lazy_static;
+use num_bigint::BigInt;
 use num_traits::cast::ToPrimitive;
 use std::{collections::HashMap, sync::RwLock};
 use uuid::Uuid;
@@ -39,10 +40,11 @@ fn write_to_output_buffer(execution_uuid: &Uuid, data: &str) {
 }
 
 pub fn greater_than(
-	vm_proxy: &mut VMProxy,
-	exec_scopes_proxy: &mut ExecutionScopesProxy,
+	vm_proxy: &mut VirtualMachine,
+	exec_scopes_proxy: &mut ExecutionScopes,
 	ids_data: &HashMap<String, HintReference>,
 	ap_tracking: &ApTracking,
+	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
 	let a = get_integer_from_var_name("a", vm_proxy, ids_data, ap_tracking)?;
 	let b = get_integer_from_var_name("b", vm_proxy, ids_data, ap_tracking)?;

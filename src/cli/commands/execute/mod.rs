@@ -78,9 +78,10 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 		let execution_uuid = Uuid::new_v4();
 		init_buffer(execution_uuid);
 		// Run the main function of cairo contract
-		let mut cairo_runner = cairo_run(
+		let (mut runner, mut vm) = cairo_run(
 			&compiled_program_path,
 			"main",
+			false,
 			false,
 			&hint_processor,
 			Default::default(),
@@ -109,7 +110,7 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 		}
 		clear_buffer(&execution_uuid);
 
-		cairo_runner.write_output(&mut output).map_err(|e| {
+		runner.write_output(&mut vm, &mut output).map_err(|e| {
 			format!(
 				"failed to print the program output \"{}\": {}",
 				compiled_program_path.display(),

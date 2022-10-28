@@ -120,14 +120,15 @@ fn run_tests_for_one_file(
 			let mut output = String::new();
 			let execution_uuid = Uuid::new_v4();
 			init_buffer(execution_uuid);
-			let cairo_runner = cairo_run(
+			let res_cairo_run = cairo_run(
 				&path_to_compiled,
 				&test_entrypoint,
+				false,
 				false,
 				hint_processor,
 				execution_uuid,
 			);
-			let mut result = match cairo_runner {
+			let (mut runner, mut vm) = match res_cairo_run {
 				Ok(res) => {
 					output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
 					res
@@ -147,8 +148,8 @@ fn run_tests_for_one_file(
 			clear_buffer(&execution_uuid);
 
 			// Display the exectution output if present
-			match result.get_output() {
-				Ok(Some(runner_output)) =>
+			match runner.get_output(&mut vm) {
+				Ok(runner_output) =>
 					if !runner_output.is_empty() {
 						output.push_str(&format!(
 							"[{}]:\n{}",
@@ -156,7 +157,6 @@ fn run_tests_for_one_file(
 							&runner_output
 						));
 					},
-				Ok(None) => {}, // Cannot happen due to cairo-rs implem
 				Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
 			};
 

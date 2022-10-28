@@ -153,7 +153,7 @@ dependencies = [
 [[package]]
 name = "cairo-rs"
 version = "0.1.0"
-source = "git+https://github.com/lambdaclass/cairo-rs#42bca5fd64774ddbc6fa1464b1f0af27cc80634b"
+source = "git+https://github.com/tdelabro/cairo-rs?branch=cairo-foundry#1a22dca4385670f59deef24a98383d7abf32a6b4"
 dependencies = [
  "bincode",
  "clap",
@@ -629,8 +629,7 @@ checksum = "9ff7415e9ae3fff1225851df9e0d9e4e5479f947619774677a63572e55e80eff"
 [[package]]
 name = "parse-hyperlinks"
 version = "0.23.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0181d37c4d5ae35cc8be7cf823c1a933005661da6a08bcb2855aa392c9a54b8e"
+source = "git+https://github.com/tdelabro/cairo-rs?branch=cairo-foundry#1a22dca4385670f59deef24a98383d7abf32a6b4"
 dependencies = [
  "html-escape",
  "nom",
