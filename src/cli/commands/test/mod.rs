@@ -35,6 +35,11 @@ pub struct TestArgs {
 	pub root: PathBuf,
 }
 
+pub struct TestResult {
+	pub output: String,
+	pub success: bool,
+}
+
 fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, String> {
 	let re = Regex::new(r"__main__.(test_\w+)$").expect("Should be a valid regex");
 	let data =
@@ -129,7 +134,7 @@ fn run_tests_for_one_file(
 	path_to_original: PathBuf,
 	path_to_compiled: PathBuf,
 	test_entrypoints: Vec<String>,
-) -> String {
+) -> TestResult {
 	let tests_output = test_entrypoints
 		.into_par_iter()
 		.map(|test_entrypoint| {
@@ -208,11 +213,14 @@ fn run_tests_for_one_file(
 			a
 		});
 
-	format!(
-		"Running tests in file {}\n{}",
-		path_to_original.display(),
-		tests_output
-	)
+	TestResult {
+		output: format!(
+			"Running tests in file {}\n{}",
+			path_to_original.display(),
+			tests_output
+		),
+		success: true,
+	}
 }
 
 impl CommandExecution<TestOutput> for TestArgs {
@@ -231,7 +239,7 @@ impl CommandExecution<TestOutput> for TestArgs {
 					test_entrypoints,
 				)
 			})
-			.for_each(|output| println!("{}", output));
+			.for_each(|test_result| println!("{}", test_result.output));
 
 		Ok(Default::default())
 	}
