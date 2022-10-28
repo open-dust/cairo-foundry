@@ -12,7 +12,6 @@ fn list_test_files_recursively() {
 	assert!(result.is_ok(), "{}", result.unwrap_err());
 	assert_eq!(
 		vec![
-			PathBuf::from("./test_cairo_contracts/test_hint_greater_than_false.cairo"),
 			PathBuf::from("./test_cairo_contracts/test_invalid_program.cairo"),
 			PathBuf::from("./test_cairo_contracts/test_valid_program.cairo"),
 		],

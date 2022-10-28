@@ -39,14 +39,3 @@ fn invalid_programs() {
 		.is_err()
 	);
 }
-
-#[test]
-fn hint_greater_than_hint() {
-	assert!(
-		ExecuteArgs {
-			program: PathBuf::from("./test_cairo_contracts/test_hint_greater_than_false.cairo"),
-		}
-		.exec()
-		.is_ok()
-	);
-}
