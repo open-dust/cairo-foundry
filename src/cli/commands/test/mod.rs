@@ -81,7 +81,7 @@ impl Display for TestOutput {
 	}
 }
 
-fn setup_hint_processor() -> BuiltinHintProcessor {
+pub(crate) fn setup_hint_processor() -> BuiltinHintProcessor {
 	let greater_than_hint = HintFunc(Box::new(greater_than));
 	let skip_hint = HintFunc(Box::new(skip));
 	let assert_revert_hint = HintFunc(Box::new(assert_revert));
@@ -129,6 +129,94 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 	clear_buffer(execution_uuid);
 }
 
+pub(crate) fn test_single_entrypoint(
+	path_to_compiled: &PathBuf,
+	test_entrypoint: String,
+	hint_processor: &BuiltinHintProcessor,
+) -> (String, bool) {
+	let mut output = String::new();
+	let execution_uuid = Uuid::new_v4();
+	init_buffer(execution_uuid);
+	let res_cairo_run = cairo_run(
+		&path_to_compiled,
+		&test_entrypoint,
+		false,
+		false,
+		hint_processor,
+		execution_uuid,
+	);
+	let (opt_runner_and_output, test_success) = match res_cairo_run {
+		Ok(res) => {
+			output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
+			(Some(res), true)
+		},
+		Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
+			custom_error_message,
+		))) if custom_error_message == "skip" => {
+			output.push_str(&format!("[{}] {}\n", "SKIPPED".yellow(), test_entrypoint,));
+			(None, true)
+		},
+		Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
+			custom_error_message,
+		))) if custom_error_message == "assert_revert_reverted" => {
+			output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
+			(None, true)
+		},
+		Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
+			custom_error_message,
+		))) if custom_error_message == "assert_revert_did_not_revert" => {
+			output.push_str(&format!(
+				"[{}] {}\nError: execution did not revert while assert_revert() was specified\n\n",
+				"FAILED".red(),
+				test_entrypoint,
+			));
+			(None, false)
+		},
+		Err(e) => {
+			output.push_str(&format!(
+				"[{}] {}\nError: {}\n\n",
+				"FAILED".red(),
+				test_entrypoint,
+				e
+			));
+			(None, false)
+		},
+	};
+
+	#[cfg(test)]
+	{
+		if test_entrypoint.starts_with("test_failing_") {
+			assert!(
+				!test_success,
+				"Test {} was marked as failing but did not fail",
+				test_entrypoint
+			);
+		}
+	}
+
+	purge_hint_buffer(&execution_uuid, &mut output);
+	let (mut runner, mut vm) = match opt_runner_and_output {
+		Some(runner_and_vm) => runner_and_vm,
+		None => return (output, test_success),
+	};
+
+	// Display the exectution output if present
+	match runner.get_output(&mut vm) {
+		Ok(runner_output) =>
+			if !runner_output.is_empty() {
+				output.push_str(&format!(
+					"[{}]:\n{}",
+					"execution output".purple(),
+					&runner_output
+				));
+			},
+		Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
+	};
+
+	output.push('\n');
+	(output, test_success)
+}
+
 fn run_tests_for_one_file(
 	hint_processor: &BuiltinHintProcessor,
 	path_to_original: PathBuf,
@@ -138,87 +226,7 @@ fn run_tests_for_one_file(
 	let (tests_output, tests_success) = test_entrypoints
 		.into_par_iter()
 		.map(|test_entrypoint| {
-			let mut output = String::new();
-			let execution_uuid = Uuid::new_v4();
-			init_buffer(execution_uuid);
-			let res_cairo_run = cairo_run(
-				&path_to_compiled,
-				&test_entrypoint,
-				false,
-				false,
-				hint_processor,
-				execution_uuid,
-			);
-			let (opt_runner_and_output, test_success) = match res_cairo_run {
-				Ok(res) => {
-					output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
-					(Some(res), true)
-				},
-				Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
-					custom_error_message,
-				))) if custom_error_message == "skip" => {
-					output.push_str(&format!("[{}] {}\n", "SKIPPED".yellow(), test_entrypoint,));
-					(None, true)
-				},
-				Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
-					custom_error_message,
-				))) if custom_error_message == "assert_revert_reverted" => {
-					output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
-					(None, true)
-				},
-				Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
-					custom_error_message,
-				))) if custom_error_message == "assert_revert_did_not_revert" => {
-					output.push_str(&format!(
-						"[{}] {}\nError: execution did not revert while assert_revert() was specified\n\n",
-						"FAILED".red(),
-						test_entrypoint,
-					));
-					(None, false)
-				},
-				Err(e) => {
-					output.push_str(&format!(
-						"[{}] {}\nError: {}\n\n",
-						"FAILED".red(),
-						test_entrypoint,
-						e
-					));
-					(None, false)
-				},
-			};
-
-			#[cfg(test)]
-			{
-				if test_entrypoint.starts_with("test_failing_") {
-					assert!(
-						!test_success,
-						"Test {} was marked as failing but did not fail",
-						test_entrypoint
-					);
-				}
-			}
-
-			purge_hint_buffer(&execution_uuid, &mut output);
-			let (mut runner, mut vm) = match opt_runner_and_output {
-				Some(runner_and_vm) => runner_and_vm,
-				None => return (output, test_success),
-			};
-
-			// Display the exectution output if present
-			match runner.get_output(&mut vm) {
-				Ok(runner_output) =>
-					if !runner_output.is_empty() {
-						output.push_str(&format!(
-							"[{}]:\n{}",
-							"execution output".purple(),
-							&runner_output
-						));
-					},
-				Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
-			};
-
-			output.push('\n');
-			(output, test_success)
+			test_single_entrypoint(&path_to_compiled, test_entrypoint, &hint_processor)
 		})
 		.reduce(
 			|| (String::new(), true),
