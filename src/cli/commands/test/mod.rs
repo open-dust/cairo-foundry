@@ -186,6 +186,18 @@ fn run_tests_for_one_file(
 					(None, false)
 				},
 			};
+
+			#[cfg(test)]
+			{
+				if test_entrypoint.starts_with("test_failing_") {
+					assert!(
+						!test_success,
+						"Test {} was marked as failing but did not fail",
+						test_entrypoint
+					);
+				}
+			}
+
 			purge_hint_buffer(&execution_uuid, &mut output);
 			let (mut runner, mut vm) = match opt_runner_and_output {
 				Some(runner_and_vm) => runner_and_vm,
