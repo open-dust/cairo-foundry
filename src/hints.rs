@@ -74,10 +74,10 @@ pub fn assert_revert(
 ) -> Result<(), VirtualMachineError> {
 	match vm.step_instruction() {
 		Ok(_) => Err(VirtualMachineError::CustomHint(
-			"assert_revert_did_not_reverted".to_string(),
+			"assert_revert_did_not_revert".to_string(),
 		)),
 		Err(_) => Err(VirtualMachineError::CustomHint(
-			"assert_revert_revert".to_string(),
+			"assert_revert_reverted".to_string(),
 		)),
 	}
 }

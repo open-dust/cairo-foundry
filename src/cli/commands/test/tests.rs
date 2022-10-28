@@ -7,7 +7,7 @@ fn test_cairo_contracts() {
 		root: PathBuf::from("./test_cairo_contracts"),
 	}
 	.exec()
-	.expect("Execution of `test_valid_program.cairo` should be a success");
+	.unwrap();
 }
 
 #[test]
@@ -16,5 +16,5 @@ fn test_cairo_hints() {
 		root: PathBuf::from("./test_cairo_hints"),
 	}
 	.exec()
-	.expect("Execution of `test_valid_program.cairo` should be a success");
+	.unwrap();
 }
