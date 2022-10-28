@@ -135,7 +135,7 @@ fn run_tests_for_one_file(
 	path_to_compiled: PathBuf,
 	test_entrypoints: Vec<String>,
 ) -> TestResult {
-	let tests_output = test_entrypoints
+	let (tests_output, tests_success) = test_entrypoints
 		.into_par_iter()
 		.map(|test_entrypoint| {
 			let mut output = String::new();
@@ -149,22 +149,22 @@ fn run_tests_for_one_file(
 				hint_processor,
 				execution_uuid,
 			);
-			let opt_runner_and_output = match res_cairo_run {
+			let (opt_runner_and_output, test_success) = match res_cairo_run {
 				Ok(res) => {
 					output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
-					Some(res)
+					(Some(res), true)
 				},
 				Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
 					custom_error_message,
 				))) if custom_error_message == "skip" => {
 					output.push_str(&format!("[{}] {}\n", "SKIPPED".yellow(), test_entrypoint,));
-					None
+					(None, true)
 				},
 				Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
 					custom_error_message,
 				))) if custom_error_message == "assert_revert_reverted" => {
 					output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
-					None
+					(None, true)
 				},
 				Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
 					custom_error_message,
@@ -174,7 +174,7 @@ fn run_tests_for_one_file(
 						"FAILED".red(),
 						test_entrypoint,
 					));
-					None
+					(None, false)
 				},
 				Err(e) => {
 					output.push_str(&format!(
@@ -183,13 +183,13 @@ fn run_tests_for_one_file(
 						test_entrypoint,
 						e
 					));
-					None
+					(None, false)
 				},
 			};
 			purge_hint_buffer(&execution_uuid, &mut output);
 			let (mut runner, mut vm) = match opt_runner_and_output {
 				Some(runner_and_vm) => runner_and_vm,
-				None => return output,
+				None => return (output, test_success),
 			};
 
 			// Display the exectution output if present
@@ -206,12 +206,16 @@ fn run_tests_for_one_file(
 			};
 
 			output.push('\n');
-			output
+			(output, test_success)
 		})
-		.reduce(String::new, |mut a, b| {
-			a.push_str(&b);
-			a
-		});
+		.reduce(
+			|| (String::new(), true),
+			|mut a, b| {
+				a.0.push_str(&b.0);
+				a.1 &= b.1;
+				a
+			},
+		);
 
 	TestResult {
 		output: format!(
@@ -219,7 +223,7 @@ fn run_tests_for_one_file(
 			path_to_original.display(),
 			tests_output
 		),
-		success: true,
+		success: tests_success,
 	}
 }
 
