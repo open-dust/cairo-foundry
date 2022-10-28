@@ -180,7 +180,7 @@ impl CommandExecution<TestOutput> for TestArgs {
 		// Declare hints
 		let hint_processor = setup_hint_processor();
 
-		let output = list_cairo_files(&self.root)?
+		list_cairo_files(&self.root)?
 			.into_par_iter()
 			.filter_map(compile_and_list_entrypoints)
 			.map(|(path_to_original, path_to_compiled, test_entrypoints)| {
@@ -191,11 +191,8 @@ impl CommandExecution<TestOutput> for TestArgs {
 					test_entrypoints,
 				)
 			})
-			.reduce(String::new, |mut a, b| {
-				a.push_str(&b);
-				a
-			});
+			.for_each(|output| println!("{}", output));
 
-		Ok(TestOutput(output))
+		Ok(Default::default())
 	}
 }
