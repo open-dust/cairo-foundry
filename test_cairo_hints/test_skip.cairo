@@ -1,4 +1,4 @@
-func test_hint() {
+func test_skip_hint() {
     %{ skip() %}
     return ();
 }
