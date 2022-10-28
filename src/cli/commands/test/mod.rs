@@ -139,13 +139,10 @@ fn run_tests_for_one_file(
 			};
 
 			// Purge the hint output buffer
+			// Safe to unwrap as long as `init_buffer` has been called before
 			let buffer = get_buffer(&execution_uuid).unwrap();
 			if !buffer.is_empty() {
-				output.push_str(&format!(
-					"[{}]:\n{}",
-					"captured stdout".blue(),
-					String::from_utf8(buffer.to_vec()).unwrap()
-				));
+				output.push_str(&format!("[{}]:\n{}", "captured stdout".blue(), buffer));
 			}
 			clear_buffer(&execution_uuid);
 
