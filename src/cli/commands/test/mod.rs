@@ -26,7 +26,7 @@ use super::{
 use crate::{
 	cairo_run::cairo_run,
 	compile::compile,
-	hints::{clear_buffer, expect_revert, get_buffer, greater_than, init_buffer, skip},
+	hints::{clear_buffer, expect_revert, get_buffer, greater_than, init_buffer, mock_call, skip},
 };
 
 #[derive(Args, Debug)]
@@ -85,10 +85,12 @@ impl Display for TestOutput {
 pub(crate) fn setup_hint_processor() -> BuiltinHintProcessor {
 	let greater_than_hint = HintFunc(Box::new(greater_than));
 	let skip_hint = HintFunc(Box::new(skip));
+	let mock_call_hint = HintFunc(Box::new(mock_call));
 	let expect_revert_hint = HintFunc(Box::new(expect_revert));
 	let mut hint_processor = BuiltinHintProcessor::new_empty();
 	hint_processor.add_hint(String::from("print(ids.a > ids.b)"), greater_than_hint);
 	hint_processor.add_hint(String::from("skip()"), skip_hint);
+	hint_processor.add_hint(String::from("mock_call()"), mock_call_hint);
 	hint_processor.add_hint(String::from("expect_revert()"), expect_revert_hint);
 	hint_processor
 }
