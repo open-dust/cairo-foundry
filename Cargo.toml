@@ -7,7 +7,7 @@ version     = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cairo-rs    = { git = "https://github.com/lambdaclass/cairo-rs" }
+cairo-rs    = { git = "https://github.com/tdelabro/cairo-rs", branch = "cairo-foundry" }
 clap        = { version = "3.2.6", features = ["derive"], default-features = false }
 colored     = "2.0.0"
 dirs        = "4.0"
