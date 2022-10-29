@@ -8,7 +8,7 @@ mod execute;
 /// list module: contains everything related to the `List` command
 mod list;
 // test module: contains everything related to the `Test` command
-mod test;
+pub mod test;
 
 /// Enum of all supported commands
 #[derive(Subcommand)]
