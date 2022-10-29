@@ -1,6 +1,7 @@
 #[cfg(test)]
 pub mod tests;
 
+use crate::hints::EXPECT_REVERT_FLAG;
 use regex::Regex;
 
 use cairo_rs::{
@@ -88,7 +89,7 @@ pub(crate) fn setup_hint_processor() -> BuiltinHintProcessor {
 	let mut hint_processor = BuiltinHintProcessor::new_empty();
 	hint_processor.add_hint(String::from("print(ids.a > ids.b)"), greater_than_hint);
 	hint_processor.add_hint(String::from("skip()"), skip_hint);
-	hint_processor.add_hint(String::from("except_revert()"), expect_revert_hint);
+	hint_processor.add_hint(String::from("expect_revert()"), expect_revert_hint);
 	hint_processor
 }
 
@@ -158,15 +159,9 @@ pub(crate) fn test_single_entrypoint(
 		},
 		Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
 			custom_error_message,
-		))) if custom_error_message == "assert_revert_reverted" => {
-			output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
-			(None, true)
-		},
-		Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
-			custom_error_message,
-		))) if custom_error_message == "assert_revert_did_not_revert" => {
+		))) if custom_error_message == EXPECT_REVERT_FLAG => {
 			output.push_str(&format!(
-				"[{}] {}\nError: execution did not revert while assert_revert() was specified\n\n",
+				"[{}] {}\nError: execution did not revert while expect_revert() was specified\n\n",
 				"FAILED".red(),
 				test_entrypoint,
 			));

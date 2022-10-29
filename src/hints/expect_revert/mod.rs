@@ -8,19 +8,18 @@ use cairo_rs::{
 };
 use num_bigint::BigInt;
 
+#[cfg(test)]
+mod tests;
+
+pub const EXPECT_REVERT_FLAG: &str = "expect_revert";
+
 pub fn expect_revert(
-	vm: &mut VirtualMachine,
-	_exec_scopes: &mut ExecutionScopes,
+	_vm: &mut VirtualMachine,
+	exec_scopes: &mut ExecutionScopes,
 	_ids_data: &HashMap<String, HintReference>,
 	_ap_tracking: &ApTracking,
 	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
-	match vm.step_instruction() {
-		Ok(_) => Err(VirtualMachineError::CustomHint(
-			"expect_revert_did_not_revert".to_string(),
-		)),
-		Err(_) => Err(VirtualMachineError::CustomHint(
-			"except_revert_reverted".to_string(),
-		)),
-	}
+	exec_scopes.assign_or_update_variable(EXPECT_REVERT_FLAG, Box::new(true));
+	Ok(())
 }
