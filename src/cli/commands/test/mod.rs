@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests;
+pub mod tests;
 
 use regex::Regex;
 
@@ -182,17 +182,6 @@ pub(crate) fn test_single_entrypoint(
 			(None, false)
 		},
 	};
-
-	#[cfg(test)]
-	{
-		if test_entrypoint.starts_with("test_failing_") {
-			assert!(
-				!test_success,
-				"Test {} was marked as failing but did not fail",
-				test_entrypoint
-			);
-		}
-	}
 
 	purge_hint_buffer(&execution_uuid, &mut output);
 	let (mut runner, mut vm) = match opt_runner_and_output {
