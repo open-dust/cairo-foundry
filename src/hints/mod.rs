@@ -16,7 +16,7 @@ use uuid::Uuid;
 pub const EXECUTION_UUID_VAR_NAME: &str = "cairo-foundry-execution-uuid";
 
 mod expect_revert;
-pub use expect_revert::expect_revert;
+pub use expect_revert::{expect_revert, EXPECT_REVERT_FLAG};
 
 lazy_static! {
 	static ref HINT_OUTPUT_BUFFER: RwLock<HashMap<Uuid, String>> = RwLock::new(HashMap::new());
