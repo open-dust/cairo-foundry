@@ -8,7 +8,7 @@ use cairo_rs::{
 };
 use num_bigint::BigInt;
 
-pub fn assert_revert(
+pub fn expect_revert(
 	vm: &mut VirtualMachine,
 	_exec_scopes: &mut ExecutionScopes,
 	_ids_data: &HashMap<String, HintReference>,
@@ -17,10 +17,10 @@ pub fn assert_revert(
 ) -> Result<(), VirtualMachineError> {
 	match vm.step_instruction() {
 		Ok(_) => Err(VirtualMachineError::CustomHint(
-			"assert_revert_did_not_revert".to_string(),
+			"expect_revert_did_not_revert".to_string(),
 		)),
 		Err(_) => Err(VirtualMachineError::CustomHint(
-			"assert_revert_reverted".to_string(),
+			"except_revert_reverted".to_string(),
 		)),
 	}
 }
