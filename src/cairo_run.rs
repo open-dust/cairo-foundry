@@ -39,15 +39,16 @@ pub fn cairo_run<'a>(
 	);
 
 	let execution_result = cairo_runner.run_until_pc(end, &mut vm, hint_processor);
+	let should_revert = cairo_runner.exec_scopes.get_any_boxed_ref(EXPECT_REVERT_FLAG).is_ok();
 
-	match cairo_runner.exec_scopes.get_any_boxed_ref(EXPECT_REVERT_FLAG) {
-		Ok(_) if execution_result.is_ok() => Err(CairoRunError::VirtualMachine(
-			VirtualMachineError::CustomHint(EXPECT_REVERT_FLAG.to_string()),
-		))?,
-		Err(_) if execution_result.is_err() =>
-			execution_result.map_err(CairoRunError::VirtualMachine)?,
-		_ => {},
+	match execution_result {
+		Ok(_) if should_revert => Err(VirtualMachineError::CustomHint(
+			EXPECT_REVERT_FLAG.to_string(),
+		)),
+		Err(_) if should_revert => Ok(()),
+		_ => execution_result,
 	}
+	.map_err(CairoRunError::VirtualMachine)?;
 
 	vm.verify_auto_deductions().map_err(CairoRunError::VirtualMachine)?;
 
