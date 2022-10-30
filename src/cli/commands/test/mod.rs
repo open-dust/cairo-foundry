@@ -18,7 +18,7 @@ use colored::Colorize;
 use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
-use std::{fmt::Display, fs, path::PathBuf, sync::Arc};
+use std::{fmt::Display, fs, path::PathBuf, sync::Arc, time::Instant};
 use uuid::Uuid;
 
 use super::{
@@ -147,6 +147,7 @@ pub(crate) fn test_single_entrypoint(
 	hint_processor: &BuiltinHintProcessor,
 	hooks: Option<Hooks>,
 ) -> (String, bool) {
+	let start = Instant::now();
 	let mut output = String::new();
 	let execution_uuid = Uuid::new_v4();
 	init_buffer(execution_uuid);
@@ -159,9 +160,15 @@ pub(crate) fn test_single_entrypoint(
 		execution_uuid,
 		hooks,
 	);
+	let duration = start.elapsed();
 	let (opt_runner_and_output, test_success) = match res_cairo_run {
 		Ok(res) => {
-			output.push_str(&format!("[{}] {}\n", "OK".green(), test_entrypoint));
+			output.push_str(&format!(
+				"[{}] {} ({:?})\n",
+				"OK".green(),
+				test_entrypoint,
+				duration
+			));
 			(Some(res), true)
 		},
 		Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
