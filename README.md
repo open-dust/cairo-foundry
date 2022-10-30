@@ -23,7 +23,10 @@
 > This repo contains highly experimental code.
 > Expect rapid iteration.
 
+![cairo-foundry](resources/img/architecture.png)
+
 ## 🎟️ Description
+
 Foundry like project for Starknet contracts development.
 
 ## 🎗️ Prerequisites
