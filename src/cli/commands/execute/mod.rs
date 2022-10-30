@@ -79,6 +79,7 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 			false,
 			&BuiltinHintProcessor::new_empty(),
 			Default::default(),
+			None,
 		)
 		.map_err(|e| {
 			format!(
