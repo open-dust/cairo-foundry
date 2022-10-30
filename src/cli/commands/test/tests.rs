@@ -9,6 +9,7 @@ pub fn run_single_test(test_name: &str, test_path: &PathBuf) -> (String, bool) {
 		&path_to_compiled,
 		test_name.to_string(),
 		&setup_hint_processor(),
+		None,
 	)
 }
 

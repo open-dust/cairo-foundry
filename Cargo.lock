@@ -154,7 +154,7 @@ dependencies = [
 [[package]]
 name = "cairo-rs"
 version = "0.1.0"
-source = "git+https://github.com/tdelabro/cairo-rs?branch=cairo-foundry#1a22dca4385670f59deef24a98383d7abf32a6b4"
+source = "git+https://github.com/tdelabro/cairo-rs?branch=cairo-foundry#78caa93f00be0a8a9751b17b70b6058bc28a9a24"
 dependencies = [
  "bincode",
  "clap",
@@ -725,7 +725,7 @@ checksum = "9ff7415e9ae3fff1225851df9e0d9e4e5479f947619774677a63572e55e80eff"
 [[package]]
 name = "parse-hyperlinks"
 version = "0.23.4"
-source = "git+https://github.com/tdelabro/cairo-rs?branch=cairo-foundry#1a22dca4385670f59deef24a98383d7abf32a6b4"
+source = "git+https://github.com/tdelabro/cairo-rs?branch=cairo-foundry#78caa93f00be0a8a9751b17b70b6058bc28a9a24"
 dependencies = [
  "html-escape",
  "nom",

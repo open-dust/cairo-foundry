@@ -1,21 +1,24 @@
 #[cfg(test)]
 pub mod tests;
 
-use crate::hints::EXPECT_REVERT_FLAG;
+use crate::hints::{self, EXPECT_REVERT_FLAG};
 use regex::Regex;
 
 use cairo_rs::{
 	hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
 		BuiltinHintProcessor, HintFunc,
 	},
-	vm::errors::{cairo_run_errors::CairoRunError, vm_errors::VirtualMachineError},
+	vm::{
+		errors::{cairo_run_errors::CairoRunError, vm_errors::VirtualMachineError},
+		hook::Hooks,
+	},
 };
 use clap::{Args, ValueHint};
 use colored::Colorize;
 use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
-use std::{fmt::Display, fs, path::PathBuf};
+use std::{fmt::Display, fs, path::PathBuf, sync::Arc};
 use uuid::Uuid;
 
 use super::{
@@ -26,7 +29,8 @@ use super::{
 use crate::{
 	cairo_run::cairo_run,
 	compile::compile,
-	hints::{clear_buffer, expect_revert, get_buffer, greater_than, init_buffer, mock_call, skip},
+	hints::{clear_buffer, expect_revert, get_buffer, init_buffer},
+	hooks,
 };
 
 #[derive(Args, Debug)]
@@ -82,17 +86,22 @@ impl Display for TestOutput {
 	}
 }
 
-pub(crate) fn setup_hint_processor() -> BuiltinHintProcessor {
-	let greater_than_hint = HintFunc(Box::new(greater_than));
-	let skip_hint = HintFunc(Box::new(skip));
-	let mock_call_hint = HintFunc(Box::new(mock_call));
+fn setup_hint_processor() -> BuiltinHintProcessor {
+	let skip_hint = HintFunc(Box::new(hints::skip));
+	let mock_call_hint = HintFunc(Box::new(hints::mock_call));
 	let expect_revert_hint = HintFunc(Box::new(expect_revert));
 	let mut hint_processor = BuiltinHintProcessor::new_empty();
-	hint_processor.add_hint(String::from("print(ids.a > ids.b)"), greater_than_hint);
 	hint_processor.add_hint(String::from("skip()"), skip_hint);
-	hint_processor.add_hint(String::from("mock_call()"), mock_call_hint);
 	hint_processor.add_hint(String::from("expect_revert()"), expect_revert_hint);
+	hint_processor.add_hint(
+		String::from("mock_call(func_to_mock, mock_ret_value)"),
+		mock_call_hint,
+	);
 	hint_processor
+}
+
+fn setup_hooks() -> Hooks {
+	Hooks::new(Arc::new(hooks::pre_step_instruction))
 }
 
 fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, String> {
@@ -136,6 +145,7 @@ pub(crate) fn test_single_entrypoint(
 	path_to_compiled: &PathBuf,
 	test_entrypoint: String,
 	hint_processor: &BuiltinHintProcessor,
+	hooks: Option<Hooks>,
 ) -> (String, bool) {
 	let mut output = String::new();
 	let execution_uuid = Uuid::new_v4();
@@ -147,6 +157,7 @@ pub(crate) fn test_single_entrypoint(
 		false,
 		hint_processor,
 		execution_uuid,
+		hooks,
 	);
 	let (opt_runner_and_output, test_success) = match res_cairo_run {
 		Ok(res) => {
@@ -208,20 +219,23 @@ fn run_tests_for_one_file(
 	path_to_original: PathBuf,
 	path_to_compiled: PathBuf,
 	test_entrypoints: Vec<String>,
+	hooks: Hooks,
 ) -> TestResult {
 	let (tests_output, tests_success) = test_entrypoints
-		.into_par_iter()
+		.into_iter()
 		.map(|test_entrypoint| {
-			test_single_entrypoint(&path_to_compiled, test_entrypoint, &hint_processor)
+			test_single_entrypoint(
+				&path_to_compiled,
+				test_entrypoint,
+				&hint_processor,
+				Some(hooks.clone()),
+			)
 		})
-		.reduce(
-			|| (String::new(), true),
-			|mut a, b| {
-				a.0.push_str(&b.0);
-				a.1 &= b.1;
-				a
-			},
-		);
+		.fold((String::new(), true), |mut a, b| {
+			a.0.push_str(&b.0);
+			a.1 &= b.1;
+			a
+		});
 
 	TestResult {
 		output: format!(
@@ -237,6 +251,7 @@ impl CommandExecution<TestOutput> for TestArgs {
 	fn exec(&self) -> Result<TestOutput, String> {
 		// Declare hints
 		let hint_processor = setup_hint_processor();
+		let hooks = setup_hooks();
 
 		list_cairo_files(&self.root)?
 			.into_par_iter()
@@ -247,6 +262,7 @@ impl CommandExecution<TestOutput> for TestArgs {
 					path_to_original,
 					path_to_compiled,
 					test_entrypoints,
+					hooks.clone(),
 				)
 			})
 			.for_each(|test_result| println!("{}", test_result.output));
