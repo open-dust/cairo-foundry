@@ -15,7 +15,7 @@
     </a>
   </p>
   
-  <h3 align="center">Foundry like project for Starknet contracts development</h3>
+  <h3 align="center">Blazingly fast testing framework for Starknet contracts development inspired by [Foundry](https://github.com/foundry-rs/foundry) 🦀 🔥</h3>
 </div>
 
 > ## ⚠️ WARNING! ⚠️
