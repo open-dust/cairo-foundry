@@ -20,7 +20,7 @@ use crate::{
 	hooks::HOOKS_VAR_NAME,
 };
 
-pub fn cairo_run<'a>(
+pub fn cairo_pre_run<'a>(
 	path: &'a Path,
 	entrypoint: &'a str,
 	trace_enabled: bool,
@@ -33,6 +33,25 @@ pub fn cairo_run<'a>(
 		Ok(program) => program,
 		Err(error) => return Err(CairoRunError::Program(error)),
 	};
+
+	cairo_run(
+		program,
+		trace_enabled,
+		print_output,
+		hint_processor,
+		execution_uudi,
+		opt_hooks,
+	)
+}
+
+pub fn cairo_run<'a>(
+	program: Program,
+	trace_enabled: bool,
+	print_output: bool,
+	hint_processor: &'a dyn HintProcessor,
+	execution_uudi: Uuid,
+	opt_hooks: Option<Hooks>,
+) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
 
 	let mut cairo_runner = CairoRunner::new(&program)?;
 	let mut vm = VirtualMachine::new(program.prime, trace_enabled);

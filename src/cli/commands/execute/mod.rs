@@ -13,7 +13,7 @@ use uuid::Uuid;
 use super::CommandExecution;
 
 use crate::{
-	cairo_run::cairo_run,
+	cairo_run::cairo_pre_run,
 	compile::compile,
 	hints::{clear_buffer, get_buffer, init_buffer},
 };
@@ -72,7 +72,7 @@ impl CommandExecution<ExecuteOutput> for ExecuteArgs {
 		let execution_uuid = Uuid::new_v4();
 		init_buffer(execution_uuid);
 		// Run the main function of cairo contract
-		let (mut runner, mut vm) = cairo_run(
+		let (mut runner, mut vm) = cairo_pre_run(
 			&compiled_program_path,
 			"main",
 			false,
