@@ -1,7 +1,7 @@
 use crate::cli::commands::{test::TestArgs, CommandExecution};
 use cairo_rs::serde::deserialize_program::deserialize_program_json;
-use std::path::PathBuf;
 use colored::Colorize;
+use std::path::PathBuf;
 
 use super::{compile_and_list_entrypoints, setup_hint_processor, test_single_entrypoint};
 

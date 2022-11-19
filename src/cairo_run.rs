@@ -44,15 +44,14 @@ pub fn cairo_pre_run<'a>(
 	)
 }
 
-pub fn cairo_run<'a>(
+pub fn cairo_run(
 	program: Program,
 	trace_enabled: bool,
 	print_output: bool,
-	hint_processor: &'a dyn HintProcessor,
+	hint_processor: &dyn HintProcessor,
 	execution_uudi: Uuid,
 	opt_hooks: Option<Hooks>,
 ) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
-
 	let mut cairo_runner = CairoRunner::new(&program)?;
 	let mut vm = VirtualMachine::new(program.prime, trace_enabled);
 	let end = cairo_runner.initialize(&mut vm)?;

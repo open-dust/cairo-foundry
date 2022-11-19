@@ -23,19 +23,15 @@ fn invalid_programs() {
 	path.push("valid_program");
 	path.set_extension(JSON_FILE_EXTENTION);
 
-	assert!(
-		ExecuteArgs {
-			program: PathBuf::from(&path),
-		}
-		.exec()
-		.is_err()
-	);
+	assert!(ExecuteArgs {
+		program: PathBuf::from(&path),
+	}
+	.exec()
+	.is_err());
 	// Invalid File (Starknet Contract)
-	assert!(
-		ExecuteArgs {
-			program: PathBuf::from("./test_cairo_contracts/test_invalid_program.cairo"),
-		}
-		.exec()
-		.is_err()
-	);
+	assert!(ExecuteArgs {
+		program: PathBuf::from("./test_cairo_contracts/test_invalid_program.cairo"),
+	}
+	.exec()
+	.is_err());
 }
