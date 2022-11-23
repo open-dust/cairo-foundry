@@ -4,32 +4,40 @@
 <div align="center">
   <h1 align="center">cairo-foundry</h1>
   <p align="center">
-    <a href="https://discord.gg/onlydust">
+    <a href="https://discord.gg/mCTgxg52">
         <img src="https://img.shields.io/badge/Discord-6666FF?style=for-the-badge&logo=discord&logoColor=white">
-    </a>
-    <a href="https://twitter.com/intent/follow?screen_name=onlydust_xyz">
-        <img src="https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white">
-    </a>
-    <a href="https://contributions.onlydust.xyz/">
-        <img src="https://img.shields.io/badge/Contribute-6A1B9A?style=for-the-badge&logo=notion&logoColor=white">
     </a>
   </p>
   
-  <h3 align="center">Blazingly fast testing framework for Starknet contracts development inspired by [Foundry](https://github.com/foundry-rs/foundry) 🦀 🔥</h3>
+  <h3 align="center">Blazingly fast testing framework for Starknet contracts development inspired by <a href="https://github.com/foundry-rs/foundry"> Foundry 🦀 🔥 </a></h3>
 </div>
+
+<br>
 
 > ## ⚠️ WARNING! ⚠️
 >
 > This repo contains highly experimental code.
-> Expect rapid iteration.
+> Expect rapid iteration & frequent breaking changes.
+
+<br>
+
+## 🏗️ Architecture
 
 ![cairo-foundry](resources/img/architecture.png)
 
 ## 🎟️ Description
 
-Foundry like project for Starknet contracts development.
+CairoFoundry is a blazingly fast toolkit for [Starknet](https://starknet.io/) application development. It is comprised of:
+
+-   ✅ A testing framework 🦀
+-   🗓️ (long-term plan) A modular CLI/SDK to interact with Starknet smart contracts, sending transactions and getting chain data.
+-   🗓️ (long-term plan) A local Starknet node wrapper
+
+The short-term goal is to build an efficient test runner for Cairo smart contract development in Rust. Good comparisons are Protostar test suite (written in Python, for Cairo) or - though less comparable - Jest (written in Javascript, for Javascript) and Pytest (written in Python, for Python).
 
 ## 🎗️ Prerequisites
+
+1. Follow the install steps for the [Rust programming language](https://www.rust-lang.org/tools/install)
 
 ## 📦 Installation
 
@@ -43,4 +51,4 @@ Pull requests are welcome, please check our [contribution guidelines](./CONTRIBU
 
 ## 📄 License
 
-**ProjectName** is released under the [MIT](LICENSE).
+**CairoFoundry** is released under the [MIT](LICENSE).
