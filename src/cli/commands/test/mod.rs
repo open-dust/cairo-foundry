@@ -18,7 +18,7 @@ use colored::Colorize;
 use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
-use std::{fmt::Display, fs::{File}, path::{PathBuf, self}, sync::Arc, time::Instant, io::BufReader};
+use std::{fmt::Display, fs::{File}, path::{PathBuf, self}, sync::Arc, time::Instant, io::{BufReader, BufWriter}};
 use uuid::Uuid;
 use sha2::{Sha256, Digest};
 use std::io;
@@ -139,7 +139,7 @@ fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, String> {
 
 fn read_json_file(path: &PathBuf) -> Result<Value, String> {
     // Open the file in read-only mode with buffer.
-    let file = File::open(path).map_err(|op|String::from("File does not exist"))?;
+    let mut file = File::open(path).map_err(|op|String::from("File does not exist"))?;
     let reader = BufReader::new(file);
 
     // Read the JSON contents
@@ -216,10 +216,15 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 						} 
 					else {
 						// todo: fix dump and refactor for cleaner solution and error handling
+						
+						let file = File::open(path_to_compiled_cache).map_err(|op|String::from("File does not exist"))?;
+    					let mut writer = BufWriter::new(file);
+						
 						let mut data = cache_data.as_object().unwrap().clone();
-						data.insert(compiled_contract_path.to_str().unwrap().to_string(), Value::String(hash_calculated));
-						let mut file = File::create(&path_to_compiled_cache).unwrap();
-						file.write(serde_json::to_string(&data).unwrap().as_bytes()).unwrap();
+						data[&compiled_contract_path.to_str().unwrap().to_string()] = Value::String(hash_calculated);
+
+						let data = serde_json::to_string_pretty(&data).unwrap();
+						writer.write(data.as_bytes()).unwrap();
 						return Ok (CompiledCacheFile {
 							path: compiled_contract_path,
 							status: CacheStatus::Uncached,
@@ -227,6 +232,15 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 					}
 				}
 				None => {
+					let hash_calculated = hash(&path_to_code).unwrap();
+					let file = File::open(path_to_compiled_cache).map_err(|op|String::from("File does not exist"))?;
+					let mut writer = BufWriter::new(file);
+					
+					let mut data = cache_data.as_object().unwrap().clone();
+					data[&compiled_contract_path.to_str().unwrap().to_string()] = Value::String(hash_calculated);
+
+					let data = serde_json::to_string_pretty(&data).unwrap();
+					writer.write(data.as_bytes()).unwrap();
 					return Ok(CompiledCacheFile {
 						path: path_to_code,
 						status: CacheStatus::Uncached
