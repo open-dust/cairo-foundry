@@ -18,8 +18,10 @@ use colored::Colorize;
 use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
-use std::{fmt::Display, fs, path::PathBuf, sync::Arc, time::Instant};
+use std::{fmt::Display, fs::File, path::{PathBuf, self}, sync::Arc, time::Instant, io::BufReader};
 use uuid::Uuid;
+
+use std::path::Path;
 
 use super::{
 	list::{path_is_valid_directory, ListArgs, ListOutput},
@@ -112,8 +114,34 @@ fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, String> {
 	.map(|cmd_output: ListOutput| cmd_output.files)
 }
 
+fn read_json_file(path: PathBuf) -> Result<Value, String> {
+    // Open the file in read-only mode with buffer.
+    let file = File::open(path).map_err(|op|String::from("File does not exist"))?;
+    let reader = BufReader::new(file);
+
+    // Read the JSON contents
+    let data = serde_json::from_reader(reader).map_err(|op| String::from("Read error"))?;
+
+    // Return the value
+    return data;
+}
+
 fn compile_and_list_entrypoints(path_to_code: PathBuf) -> Option<(PathBuf, PathBuf, Vec<String>)> {
 	// open cachedir/compiled.json
+	let cachedir = dirs::cache_dir()?;
+
+	let file = File::open(path_to_code)?;
+    let reader = BufReader::new(file);
+
+    // Read the JSON contents of the file as an instance of `User`.
+    let u = serde_json::from_reader(reader)?;
+	
+	let mut path_to_compiled_cache = PathBuf::new();
+	path_to_compiled_cache.push(&cachedir);
+	path_to_compiled_cache.push("cache-compiled.json");
+
+
+
 	// if fails =>
 		// create a new one
 		// compute hash
@@ -127,8 +155,6 @@ fn compile_and_list_entrypoints(path_to_code: PathBuf) -> Option<(PathBuf, PathB
 		// if hash is not equal
 		// compile
 		// dump to json
-		
-
 
 	match compile(&path_to_code) {
 		Ok(path_to_compiled) => match list_test_entrypoints(&path_to_compiled) {
