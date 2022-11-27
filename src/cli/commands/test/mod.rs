@@ -179,7 +179,7 @@ fn create_compiled_path(path_to_code: &PathBuf) -> PathBuf {
 	let cachedir = dirs::cache_dir().expect("Could not make cache directory");
 	let mut path_to_compiled = PathBuf::new();
 	path_to_compiled.push(&cachedir);
-	path_to_compiled.push("cache-compiled");
+	path_to_compiled.push("compiled-cairo-files");
 	path_to_compiled.push(filename);
 	path_to_compiled.set_extension("json");
 	return path_to_compiled;
@@ -195,9 +195,10 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 
 	let data = read_json_file(path_to_compiled_cache);
 
-	let compiled_contract_path = create_compiled_path(&path_to_code);
+	
 	match data {
 		Ok(cache_data) => {
+			let compiled_contract_path = create_compiled_path(&path_to_code);
 			let data = cache_data.as_object().unwrap();
 			let value = data.get(&compiled_contract_path.to_str().unwrap().to_string());
 			match value {
@@ -220,7 +221,7 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 				}
 				None => {
 					return Ok(CompiledCacheFile {
-						path: compiled_contract_path,
+						path: path_to_code,
 						status: CacheStatus::Uncached
 					})
 				}
@@ -229,7 +230,7 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 		}
 		Err(_) => {
 			return Ok(CompiledCacheFile {
-				path: compiled_contract_path,
+				path: path_to_code,
 				status: CacheStatus::Uncached
 			})
 		}
