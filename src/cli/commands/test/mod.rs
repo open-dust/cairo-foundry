@@ -113,6 +113,23 @@ fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, String> {
 }
 
 fn compile_and_list_entrypoints(path_to_code: PathBuf) -> Option<(PathBuf, PathBuf, Vec<String>)> {
+	// open cachedir/compiled.json
+	// if fails =>
+		// create a new one
+		// compute hash
+		// dump into json
+	// if success 
+		// read from json key
+		// compare hash
+		// if hash is equal => 
+		// 	do not compile
+		//  open path_to_cairo_file in cache_dir
+		// if hash is not equal
+		// compile
+		// dump to json
+		
+
+
 	match compile(&path_to_code) {
 		Ok(path_to_compiled) => match list_test_entrypoints(&path_to_compiled) {
 			Ok(entrypoints) => Some((path_to_code, path_to_compiled, entrypoints)),
