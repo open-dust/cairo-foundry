@@ -27,3 +27,4 @@ thiserror = "1.0.37"
 uuid = { version = "1.2.1", features = ["v4"] }
 walkdir = "2.3.2"
 which = "4.3.0"
+sha2 = "0.10.6"

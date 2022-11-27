@@ -18,8 +18,10 @@ use colored::Colorize;
 use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
-use std::{fmt::Display, fs::File, path::{PathBuf, self}, sync::Arc, time::Instant, io::BufReader};
+use std::{fmt::Display, fs::{File}, path::{PathBuf, self}, sync::Arc, time::Instant, io::BufReader};
 use uuid::Uuid;
+use sha2::{Sha256, Digest};
+use std::io;
 
 use std::path::Path;
 
@@ -47,10 +49,30 @@ pub struct TestResult {
 	pub success: bool,
 }
 
+enum CacheStatus {
+	Cached,
+	Uncached,
+}
+
+pub struct CompiledCacheFile {
+	path: PathBuf,
+	status: CacheStatus
+}
+
+fn hash(filepath: PathBuf) -> Result<String, String>{
+	let mut hasher = Sha256::new();
+	let mut file = File::open(filepath).unwrap();
+	let bytes_written = io::copy(&mut file, &mut hasher);
+	let mut hash_bytes = hasher.finalize();
+	let mut hash_result: &mut [u8];
+	let hex_hash = String::from_utf8(hash_bytes.to_vec()).expect("Found invalid UTF-8");
+	return Ok(hex_hash);
+}
+
 fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, String> {
 	let re = Regex::new(r"__main__.(test_\w+)$").expect("Should be a valid regex");
 	let data =
-		fs::read_to_string(compiled_path).map_err(|err| format!("File does not exist: {}", err))?;
+		std::fs::read_to_string(compiled_path).map_err(|err| format!("File does not exist: {}", err))?;
 	let json = serde_json::from_str::<Value>(&data)
 		.map_err(|err| format!("Compilation output is not a valid JSON: {}", err))?;
 	let mut test_entrypoints = Vec::new();
@@ -126,36 +148,7 @@ fn read_json_file(path: PathBuf) -> Result<Value, String> {
     return data;
 }
 
-fn compile_and_list_entrypoints(path_to_code: PathBuf) -> Option<(PathBuf, PathBuf, Vec<String>)> {
-	// open cachedir/compiled.json
-	let cachedir = dirs::cache_dir()?;
-
-	let file = File::open(path_to_code)?;
-    let reader = BufReader::new(file);
-
-    // Read the JSON contents of the file as an instance of `User`.
-    let u = serde_json::from_reader(reader)?;
-	
-	let mut path_to_compiled_cache = PathBuf::new();
-	path_to_compiled_cache.push(&cachedir);
-	path_to_compiled_cache.push("cache-compiled.json");
-
-
-
-	// if fails =>
-		// create a new one
-		// compute hash
-		// dump into json
-	// if success 
-		// read from json key
-		// compare hash
-		// if hash is equal => 
-		// 	do not compile
-		//  open path_to_cairo_file in cache_dir
-		// if hash is not equal
-		// compile
-		// dump to json
-
+fn compile_and_list_entrypoints(path_to_code: PathBuf) ->  Option<(PathBuf, PathBuf, Vec<String>)> {
 	match compile(&path_to_code) {
 		Ok(path_to_compiled) => match list_test_entrypoints(&path_to_compiled) {
 			Ok(entrypoints) => Some((path_to_code, path_to_compiled, entrypoints)),
@@ -174,6 +167,73 @@ fn compile_and_list_entrypoints(path_to_code: PathBuf) -> Option<(PathBuf, PathB
 		},
 	}
 }
+
+fn create_compiled_path(path_to_code: &PathBuf) -> PathBuf {
+	let filename = path_to_code
+		.file_stem()
+		.expect("File does not have a file stem");
+
+	let cachedir = dirs::cache_dir().expect("Could not make cache directory");
+	let mut path_to_compiled = PathBuf::new();
+	path_to_compiled.push(&cachedir);
+	path_to_compiled.push("cache-compiled");
+	path_to_compiled.push(filename);
+	path_to_compiled.set_extension("json");
+	return path_to_compiled;
+}
+
+
+
+fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
+	let cachedir = dirs::cache_dir().expect("cache dir not supported");	
+	let mut path_to_compiled_cache = PathBuf::new();
+	path_to_compiled_cache.push(&cachedir);
+	path_to_compiled_cache.push("cache-compiled.json");
+
+	let data = read_json_file(path_to_compiled_cache);
+
+	let compiled_contract_path = create_compiled_path(&path_to_code);
+	match data {
+		Ok(cache_data) => {
+			let data = cache_data.as_object().unwrap();
+			let value = data.get(&compiled_contract_path.to_str().unwrap().to_string());
+			match value {
+				Some(value) => {
+					let hash_in_cache = value.as_str().unwrap();
+					let hash_calculated = hash(path_to_code).unwrap();
+
+					if hash_in_cache == hash_calculated {
+						return Ok (CompiledCacheFile {
+							path: compiled_contract_path,
+							status: CacheStatus::Cached,
+						});
+						} else {
+							return Ok (CompiledCacheFile {
+								path: compiled_contract_path,
+								status: CacheStatus::Uncached,
+						});
+							
+					}
+				}
+				None => {
+					return Ok(CompiledCacheFile {
+						path: compiled_contract_path,
+						status: CacheStatus::Uncached
+					})
+				}
+				
+			}	
+		}
+		Err(_) => {
+			return Ok(CompiledCacheFile {
+				path: compiled_contract_path,
+				status: CacheStatus::Uncached
+			})
+		}
+
+	}
+}
+
 
 fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 	// Safe to unwrap as long as `init_buffer` has been called before
