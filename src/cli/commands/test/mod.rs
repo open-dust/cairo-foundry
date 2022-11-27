@@ -154,6 +154,7 @@ fn compile_and_list_entrypoints(cache: Result<CompiledCacheFile, String>) ->  Op
 		Ok(cache) => {
 			match cache.status {
 				CacheStatus::Cached => {
+					println!("Using cached compiled file");
 					let compiled_path = cache.path.clone();
 					let entrypoints = list_test_entrypoints(&cache.path).expect("Failed to list entrypoints");
 					return Some((cache.path, compiled_path, entrypoints));
@@ -212,12 +213,17 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 							path: compiled_contract_path,
 							status: CacheStatus::Cached,
 						});
-						} else {
-							return Ok (CompiledCacheFile {
-								path: compiled_contract_path,
-								status: CacheStatus::Uncached,
+						} 
+					else {
+						// todo: fix dump and refactor for cleaner solution and error handling
+						let mut data = cache_data.as_object().unwrap().clone();
+						data.insert(compiled_contract_path.to_str().unwrap().to_string(), Value::String(hash_calculated));
+						let mut file = File::create(&path_to_compiled_cache).unwrap();
+						file.write(serde_json::to_string(&data).unwrap().as_bytes()).unwrap();
+						return Ok (CompiledCacheFile {
+							path: compiled_contract_path,
+							status: CacheStatus::Uncached,
 						});
-							
 					}
 				}
 				None => {
@@ -230,9 +236,10 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 			}	
 		}
 		Err(_) => {
-			// dump json file
+			
 			let mut map = Map::new();
 			let path = path_to_code.clone();
+			// todo: fix dump and refactor for cleaner solution and error handling
 			let hash_calculated = hash(&path_to_code).unwrap();
 			map.insert(path.to_str().unwrap().to_string(), Value::String(hash_calculated.to_string()));
 			let json = Value::Object(map);
@@ -244,7 +251,6 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 				status: CacheStatus::Uncached
 			})
 		}
-
 	}
 }
 
