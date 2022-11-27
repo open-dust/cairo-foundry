@@ -24,6 +24,8 @@ use sha2::{Sha256, Digest};
 use std::io;
 
 use std::path::Path;
+use serde_json::Map;
+use std::io::Write;
 
 use super::{
 	list::{path_is_valid_directory, ListArgs, ListOutput},
@@ -59,7 +61,7 @@ pub struct CompiledCacheFile {
 	status: CacheStatus
 }
 
-fn hash(filepath: PathBuf) -> Result<String, String>{
+fn hash(filepath: &PathBuf) -> Result<String, String>{
 	let mut hasher = Sha256::new();
 	let mut file = File::open(filepath).unwrap();
 	let bytes_written = io::copy(&mut file, &mut hasher);
@@ -136,7 +138,7 @@ fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, String> {
 	.map(|cmd_output: ListOutput| cmd_output.files)
 }
 
-fn read_json_file(path: PathBuf) -> Result<Value, String> {
+fn read_json_file(path: &PathBuf) -> Result<Value, String> {
     // Open the file in read-only mode with buffer.
     let file = File::open(path).map_err(|op|String::from("File does not exist"))?;
     let reader = BufReader::new(file);
@@ -193,7 +195,7 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 	path_to_compiled_cache.push(&cachedir);
 	path_to_compiled_cache.push("cache-compiled.json");
 
-	let data = read_json_file(path_to_compiled_cache);
+	let data = read_json_file(&path_to_compiled_cache);
 
 	
 	match data {
@@ -204,7 +206,7 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 			match value {
 				Some(value) => {
 					let hash_in_cache = value.as_str().unwrap();
-					let hash_calculated = hash(path_to_code).unwrap();
+					let hash_calculated = hash(&path_to_code).unwrap();
 
 					if hash_in_cache == hash_calculated {
 						return Ok (CompiledCacheFile {
@@ -229,6 +231,15 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 			}	
 		}
 		Err(_) => {
+			// dump json file
+			let mut map = Map::new();
+			let path = path_to_code.clone();
+			let hash_calculated = hash(&path_to_code).unwrap();
+			map.insert(path.to_str().unwrap().to_string(), Value::String(hash_calculated));
+			let json = Value::Object(map);
+			let mut file = File::create(path_to_compiled_cache).unwrap();
+			file.write_all(json.to_string().as_bytes()).unwrap();
+		
 			return Ok(CompiledCacheFile {
 				path: path_to_code,
 				status: CacheStatus::Uncached
