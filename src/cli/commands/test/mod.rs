@@ -62,13 +62,12 @@ pub struct CompiledCacheFile {
 }
 
 fn hash(filepath: &PathBuf) -> Result<String, String>{
+	// hash filepath
 	let mut hasher = Sha256::new();
-	let mut file = File::open(filepath).unwrap();
-	let bytes_written = io::copy(&mut file, &mut hasher);
-	let mut hash_bytes = hasher.finalize();
-	let mut hash_result: &mut [u8];
-	let hex_hash = String::from_utf8(hash_bytes.to_vec()).expect("Found invalid UTF-8");
-	return Ok(hex_hash);
+	let mut file = File::open(filepath).map_err(|e| format!("Failed to open file: {}", e))?;
+	io::copy(&mut file, &mut hasher).map_err(|e| format!("Failed to hash file: {}", e))?;
+	let hash = hasher.finalize();
+	return Ok(format!("{:x}", hash));
 }
 
 fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, String> {
@@ -235,7 +234,7 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 			let mut map = Map::new();
 			let path = path_to_code.clone();
 			let hash_calculated = hash(&path_to_code).unwrap();
-			map.insert(path.to_str().unwrap().to_string(), Value::String(hash_calculated));
+			map.insert(path.to_str().unwrap().to_string(), Value::String(hash_calculated.to_string()));
 			let json = Value::Object(map);
 			let mut file = File::create(path_to_compiled_cache).unwrap();
 			file.write_all(json.to_string().as_bytes()).unwrap();
