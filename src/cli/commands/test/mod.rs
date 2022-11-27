@@ -148,23 +148,26 @@ fn read_json_file(path: PathBuf) -> Result<Value, String> {
     return data;
 }
 
-fn compile_and_list_entrypoints(path_to_code: PathBuf) ->  Option<(PathBuf, PathBuf, Vec<String>)> {
-	match compile(&path_to_code) {
-		Ok(path_to_compiled) => match list_test_entrypoints(&path_to_compiled) {
-			Ok(entrypoints) => Some((path_to_code, path_to_compiled, entrypoints)),
-			Err(e) => {
-				eprintln!(
-					"Failed to list test entrypoints for file {}: {}",
-					path_to_compiled.display(),
-					e
-				);
-				None
-			},
+fn compile_and_list_entrypoints(cache: Result<CompiledCacheFile, String>) ->  Option<(PathBuf, PathBuf, Vec<String>)> {
+	match cache {
+		Ok(cache) => {
+			match cache.status {
+				CacheStatus::Cached => {
+					let compiled_path = cache.path.clone();
+					let entrypoints = list_test_entrypoints(&cache.path).expect("Failed to list entrypoints");
+					return Some((cache.path, compiled_path, entrypoints));
+				},
+				CacheStatus::Uncached => {
+					let compiled_path = compile(&cache.path).expect("Failed to compile");
+					let entrypoints = list_test_entrypoints(&compiled_path).expect("Failed to list entrypoints");
+					return Some((cache.path, compiled_path, entrypoints));
+				}
+			}
 		},
-		Err(e) => {
-			eprintln!("{}", e);
-			None
-		},
+		Err(err) => {
+			eprintln!("{}", err);
+			return None;
+		}
 	}
 }
 
@@ -365,6 +368,7 @@ impl CommandExecution<TestOutput> for TestArgs {
 
 		list_cairo_files(&self.root)?
 			.into_par_iter()
+			.map(|op| read_cache(op))
 			.filter_map(compile_and_list_entrypoints)
 			.map(|(path_to_original, path_to_compiled, test_entrypoints)| {
 				run_tests_for_one_file(
