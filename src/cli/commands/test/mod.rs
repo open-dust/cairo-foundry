@@ -16,12 +16,13 @@ use cairo_rs::{
 use clap::{Args, ValueHint};
 use colored::Colorize;
 use rayon::prelude::*;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use std::{fmt::Display, fs::{File}, path::{PathBuf, self}, sync::Arc, time::Instant, io::{BufReader, BufWriter}};
 use uuid::Uuid;
 use sha2::{Sha256, Digest};
 use std::io;
+use std::collections::HashMap;
 
 use std::path::Path;
 use serde_json::Map;
@@ -59,6 +60,11 @@ enum CacheStatus {
 pub struct CompiledCacheFile {
 	path: PathBuf,
 	status: CacheStatus
+}
+
+#[derive(Serialize, Deserialize)]
+struct CacheJson {
+	pair: HashMap<String, String>
 }
 
 fn hash(filepath: &PathBuf) -> Result<String, String>{
@@ -197,69 +203,70 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 
 	let data = read_json_file(&path_to_compiled_cache);
 
-	
+
 	match data {
+		// json file exists
 		Ok(cache_data) => {
 			let compiled_contract_path = create_compiled_path(&path_to_code);
 			let data = cache_data.as_object().unwrap();
-			let value = data.get(&compiled_contract_path.to_str().unwrap().to_string());
-			match value {
-				Some(value) => {
-					let hash_in_cache = value.as_str().unwrap();
-					let hash_calculated = hash(&path_to_code).unwrap();
+			// its impossible to not get this key so its safe to unwrap
+			// if the key is not present then new cache file will be created
+			let value = data.get("pair").unwrap();
 
-					if hash_in_cache == hash_calculated {
+			let mut map: HashMap<String, String> = value.as_object().unwrap().iter().map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string())).collect();
+					map.get_key_value(&path_to_code.to_str().unwrap().to_string());
+			
+			// extract value from hashmap
+			let hash_in_cache = map.get(&path_to_code.to_str().unwrap().to_string());
+			let hash_calculated = hash(&path_to_code).unwrap();
+			match hash_in_cache {
+				// if contract is already in cache
+				Some(hash_in_cache) => {
+					// hash in cache == hash_calculated
+					if *hash_in_cache == hash_calculated {
 						return Ok (CompiledCacheFile {
 							path: compiled_contract_path,
 							status: CacheStatus::Cached,
 						});
-						} 
+						}
 					else {
-						// todo: fix dump and refactor for cleaner solution and error handling
-						
-						let file = File::open(path_to_compiled_cache).map_err(|op|String::from("File does not exist"))?;
-    					let mut writer = BufWriter::new(file);
-						
-						let mut data = cache_data.as_object().unwrap().clone();
-						data[&compiled_contract_path.to_str().unwrap().to_string()] = Value::String(hash_calculated);
-
+						map.insert(path_to_code.to_str().unwrap().to_string(), hash_calculated);
+						let data = CacheJson{
+							pair: map,
+						};
 						let data = serde_json::to_string_pretty(&data).unwrap();
-						writer.write(data.as_bytes()).unwrap();
+						let mut file = File::open(path_to_compiled_cache).unwrap();
+						file.write(data.as_bytes()).unwrap();
+
 						return Ok (CompiledCacheFile {
 							path: compiled_contract_path,
 							status: CacheStatus::Uncached,
 						});
 					}
+
 				}
 				None => {
-					let hash_calculated = hash(&path_to_code).unwrap();
-					let file = File::open(path_to_compiled_cache).map_err(|op|String::from("File does not exist"))?;
-					let mut writer = BufWriter::new(file);
-					
-					let mut data = cache_data.as_object().unwrap().clone();
-					data[&compiled_contract_path.to_str().unwrap().to_string()] = Value::String(hash_calculated);
-
-					let data = serde_json::to_string_pretty(&data).unwrap();
-					writer.write(data.as_bytes()).unwrap();
-					return Ok(CompiledCacheFile {
-						path: path_to_code,
-						status: CacheStatus::Uncached
-					})
+					return Ok (CompiledCacheFile {
+						path: compiled_contract_path,
+						status: CacheStatus::Uncached,
+					});
 				}
+			}			
 				
-			}	
 		}
+		// json file does not exists
 		Err(_) => {
-			
-			let mut map = Map::new();
 			let path = path_to_code.clone();
 			// todo: fix dump and refactor for cleaner solution and error handling
 			let hash_calculated = hash(&path_to_code).unwrap();
-			map.insert(path.to_str().unwrap().to_string(), Value::String(hash_calculated.to_string()));
-			let json = Value::Object(map);
+			let mut map = HashMap::new();
+			map.insert(path.to_str().unwrap().to_string(), String::from(hash_calculated.to_string()));
+			let data = CacheJson{
+				pair: map,
+			};
+			let data = serde_json::to_string_pretty(&data).unwrap();
 			let mut file = File::create(path_to_compiled_cache).unwrap();
-			file.write_all(json.to_string().as_bytes()).unwrap();
-		
+			file.write(data.as_bytes()).unwrap();
 			return Ok(CompiledCacheFile {
 				path: path_to_code,
 				status: CacheStatus::Uncached
