@@ -243,9 +243,16 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 							status: CacheStatus::Uncached,
 						});
 					}
-
 				}
+				// if contract is not in cache yet
 				None => {
+						map.insert(path_to_code.to_str().unwrap().to_string(), hash_calculated);
+						let data = CacheJson{
+							pair: map,
+						};
+						let data = serde_json::to_string_pretty(&data).unwrap();
+						let mut file = File::open(path_to_compiled_cache).unwrap();
+						file.write(data.as_bytes()).unwrap();
 					return Ok (CompiledCacheFile {
 						path: compiled_contract_path,
 						status: CacheStatus::Uncached,
