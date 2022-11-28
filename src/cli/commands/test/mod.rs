@@ -18,7 +18,7 @@ use colored::Colorize;
 use rayon::prelude::*;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
-use std::{fmt::Display, fs::{File}, path::{PathBuf, self}, sync::Arc, time::Instant, io::{BufReader, BufWriter}};
+use std::{fmt::{Display, format}, fs::{File}, path::{PathBuf, self}, sync::Arc, time::Instant, io::{BufReader, BufWriter}};
 use uuid::Uuid;
 use sha2::{Sha256, Digest};
 use std::io;
@@ -62,7 +62,7 @@ pub struct CompiledCacheFile {
 	status: CacheStatus
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct CacheJson {
 	pair: HashMap<String, String>
 }
@@ -143,16 +143,17 @@ fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, String> {
 	.map(|cmd_output: ListOutput| cmd_output.files)
 }
 
-fn read_json_file(path: &PathBuf) -> Result<Value, String> {
+fn read_json_file(path: &PathBuf) -> Result<CacheJson, String> {
     // Open the file in read-only mode with buffer.
-    let mut file = File::open(path).map_err(|op|String::from("File does not exist"))?;
+    let file = File::open(path).map_err(|op|format!("file does not exists {}", op))?;
     let reader = BufReader::new(file);
-
+	dbg!(format!("read json file"));
+	dbg!(path);
     // Read the JSON contents
-    let data = serde_json::from_reader(reader).map_err(|op| String::from("Read error"))?;
-
+	let data = serde_json::from_reader(reader).map_err(|op|format!("file does not exists {}", op))?;
+    // let data = serde_json::from_slice(reader).map_err(|op| format!("Read error {}", op))?;
     // Return the value
-    return data;
+    return Ok(data);
 }
 
 fn compile_and_list_entrypoints(cache: Result<CompiledCacheFile, String>) ->  Option<(PathBuf, PathBuf, Vec<String>)> {
@@ -193,8 +194,6 @@ fn create_compiled_path(path_to_code: &PathBuf) -> PathBuf {
 	return path_to_compiled;
 }
 
-
-
 fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 	let cachedir = dirs::cache_dir().expect("cache dir not supported");	
 	let mut path_to_compiled_cache = PathBuf::new();
@@ -203,18 +202,17 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 
 	let data = read_json_file(&path_to_compiled_cache);
 
-
 	match data {
 		// json file exists
 		Ok(cache_data) => {
 			let compiled_contract_path = create_compiled_path(&path_to_code);
-			let data = cache_data.as_object().unwrap();
+	
 			// its impossible to not get this key so its safe to unwrap
 			// if the key is not present then new cache file will be created
-			let value = data.get("pair").unwrap();
-
-			let mut map: HashMap<String, String> = value.as_object().unwrap().iter().map(|(k, v)| (k.to_string(), v.as_str().unwrap().to_string())).collect();
-					map.get_key_value(&path_to_code.to_str().unwrap().to_string());
+			let mut map = cache_data.pair;
+		
+			dbg!(String::from("original map"));
+			dbg!(&map);
 			
 			// extract value from hashmap
 			let hash_in_cache = map.get(&path_to_code.to_str().unwrap().to_string());
@@ -223,6 +221,8 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 				// if contract is already in cache
 				Some(hash_in_cache) => {
 					// hash in cache == hash_calculated
+					dbg!(String::from("hash equal"));
+					dbg!(String::from("asdsad"));
 					if *hash_in_cache == hash_calculated {
 						return Ok (CompiledCacheFile {
 							path: compiled_contract_path,
@@ -234,9 +234,11 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 						let data = CacheJson{
 							pair: map,
 						};
+						dbg!(String::from("hash not equal"));
+						dbg!(&data);
 						let data = serde_json::to_string_pretty(&data).unwrap();
-						let mut file = File::open(path_to_compiled_cache).unwrap();
-						file.write(data.as_bytes()).unwrap();
+						let mut file = File::create(path_to_compiled_cache).unwrap();
+						file.write_all(data.as_bytes()).unwrap();
 
 						return Ok (CompiledCacheFile {
 							path: compiled_contract_path,
@@ -250,9 +252,11 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 						let data = CacheJson{
 							pair: map,
 						};
+						dbg!(String::from("contract not in cache yet"));
+						dbg!(&data);
 						let data = serde_json::to_string_pretty(&data).unwrap();
-						let mut file = File::open(path_to_compiled_cache).unwrap();
-						file.write(data.as_bytes()).unwrap();
+						let mut file = File::create(path_to_compiled_cache).unwrap();
+						file.write_all(data.as_bytes()).unwrap();
 					return Ok (CompiledCacheFile {
 						path: compiled_contract_path,
 						status: CacheStatus::Uncached,
@@ -262,7 +266,8 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 				
 		}
 		// json file does not exists
-		Err(_) => {
+		Err(error) => {
+			dbg!{format!{"File does not exist error: {}", error}};
 			let path = path_to_code.clone();
 			// todo: fix dump and refactor for cleaner solution and error handling
 			let hash_calculated = hash(&path_to_code).unwrap();
@@ -271,9 +276,11 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 			let data = CacheJson{
 				pair: map,
 			};
+			dbg!(String::from("File do not exist"));
+			dbg!(&data);
 			let data = serde_json::to_string_pretty(&data).unwrap();
 			let mut file = File::create(path_to_compiled_cache).unwrap();
-			file.write(data.as_bytes()).unwrap();
+			file.write_all(data.as_bytes()).unwrap();
 			return Ok(CompiledCacheFile {
 				path: path_to_code,
 				status: CacheStatus::Uncached
