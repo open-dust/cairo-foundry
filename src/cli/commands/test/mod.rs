@@ -16,17 +16,24 @@ use cairo_rs::{
 use clap::{Args, ValueHint};
 use colored::Colorize;
 use rayon::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{fmt::{Display, format}, fs::{File}, path::{PathBuf, self}, sync::Arc, time::Instant, io::{BufReader, BufWriter}};
-use uuid::Uuid;
-use sha2::{Sha256, Digest};
-use std::io;
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
+use std::io;
+use std::{
+	fmt::{format, Display},
+	fs::File,
+	io::{BufReader, BufWriter},
+	path::{self, PathBuf},
+	sync::Arc,
+	time::Instant,
+};
+use uuid::Uuid;
 
-use std::path::Path;
 use serde_json::Map;
 use std::io::Write;
+use std::path::Path;
 
 use super::{
 	list::{path_is_valid_directory, ListArgs, ListOutput},
@@ -59,15 +66,16 @@ enum CacheStatus {
 
 pub struct CompiledCacheFile {
 	path: PathBuf,
-	status: CacheStatus
+	status: CacheStatus,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct CacheJson {
-	pair: HashMap<String, String>
+	contract_path: String,
+	sha256: String,
 }
 
-fn hash(filepath: &PathBuf) -> Result<String, String>{
+fn hash(filepath: &PathBuf) -> Result<String, String> {
 	// hash filepath
 	let mut hasher = Sha256::new();
 	let mut file = File::open(filepath).map_err(|e| format!("Failed to open file: {}", e))?;
@@ -78,8 +86,8 @@ fn hash(filepath: &PathBuf) -> Result<String, String>{
 
 fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, String> {
 	let re = Regex::new(r"__main__.(test_\w+)$").expect("Should be a valid regex");
-	let data =
-		std::fs::read_to_string(compiled_path).map_err(|err| format!("File does not exist: {}", err))?;
+	let data = std::fs::read_to_string(compiled_path)
+		.map_err(|err| format!("File does not exist: {}", err))?;
 	let json = serde_json::from_str::<Value>(&data)
 		.map_err(|err| format!("Compilation output is not a valid JSON: {}", err))?;
 	let mut test_entrypoints = Vec::new();
@@ -144,46 +152,42 @@ fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, String> {
 }
 
 fn read_json_file(path: &PathBuf) -> Result<CacheJson, String> {
-    // Open the file in read-only mode with buffer.
-    let file = File::open(path).map_err(|op|format!("file does not exists {}", op))?;
-    let reader = BufReader::new(file);
-	dbg!(format!("read json file"));
-	dbg!(path);
-    // Read the JSON contents
-	let data = serde_json::from_reader(reader).map_err(|op|format!("file does not exists {}", op))?;
-    // let data = serde_json::from_slice(reader).map_err(|op| format!("Read error {}", op))?;
-    // Return the value
-    return Ok(data);
+	// Open the file in read-only mode with buffer.
+	let file = File::open(path).map_err(|op| format!("file does not exists {}", op))?;
+	let reader = BufReader::new(file);
+	let data =
+		serde_json::from_reader(reader).map_err(|op| format!("file does not exists {}", op))?;
+	return Ok(data);
 }
 
-fn compile_and_list_entrypoints(cache: Result<CompiledCacheFile, String>) ->  Option<(PathBuf, PathBuf, Vec<String>)> {
+fn compile_and_list_entrypoints(
+	cache: Result<CompiledCacheFile, String>,
+) -> Option<(PathBuf, PathBuf, Vec<String>)> {
 	match cache {
-		Ok(cache) => {
-			match cache.status {
-				CacheStatus::Cached => {
-					println!("Using cached compiled file");
-					let compiled_path = cache.path.clone();
-					let entrypoints = list_test_entrypoints(&cache.path).expect("Failed to list entrypoints");
-					return Some((cache.path, compiled_path, entrypoints));
-				},
-				CacheStatus::Uncached => {
-					let compiled_path = compile(&cache.path).expect("Failed to compile");
-					let entrypoints = list_test_entrypoints(&compiled_path).expect("Failed to list entrypoints");
-					return Some((cache.path, compiled_path, entrypoints));
-				}
-			}
+		Ok(cache) => match cache.status {
+			CacheStatus::Cached => {
+				println!("Using cached compiled file");
+				let compiled_path = cache.path.clone();
+				let entrypoints =
+					list_test_entrypoints(&cache.path).expect("Failed to list entrypoints");
+				return Some((cache.path, compiled_path, entrypoints));
+			},
+			CacheStatus::Uncached => {
+				let compiled_path = compile(&cache.path).expect("Failed to compile");
+				let entrypoints =
+					list_test_entrypoints(&compiled_path).expect("Failed to list entrypoints");
+				return Some((cache.path, compiled_path, entrypoints));
+			},
 		},
 		Err(err) => {
 			eprintln!("{}", err);
 			return None;
-		}
+		},
 	}
 }
 
 fn create_compiled_path(path_to_code: &PathBuf) -> PathBuf {
-	let filename = path_to_code
-		.file_stem()
-		.expect("File does not have a file stem");
+	let filename = path_to_code.file_stem().expect("File does not have a file stem");
 
 	let cachedir = dirs::cache_dir().expect("Could not make cache directory");
 	let mut path_to_compiled = PathBuf::new();
@@ -195,10 +199,18 @@ fn create_compiled_path(path_to_code: &PathBuf) -> PathBuf {
 }
 
 fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
-	let cachedir = dirs::cache_dir().expect("cache dir not supported");	
+	// read individual cache file
+	// avoid same cache file because we're doing multiprocessing and getting race condition
+	let cachedir = dirs::cache_dir().expect("cache dir not supported");
+	let filename = path_to_code.file_stem().unwrap().to_str().unwrap();
+
 	let mut path_to_compiled_cache = PathBuf::new();
 	path_to_compiled_cache.push(&cachedir);
-	path_to_compiled_cache.push("cache-compiled.json");
+	path_to_compiled_cache.push("cache-compiled");
+
+	// create dir
+	std::fs::create_dir_all(&path_to_compiled_cache).expect("Could not make cache directory");
+	path_to_compiled_cache.push(format!("{}.json", filename));
 
 	let data = read_json_file(&path_to_compiled_cache);
 
@@ -206,89 +218,55 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 		// json file exists
 		Ok(cache_data) => {
 			let compiled_contract_path = create_compiled_path(&path_to_code);
-	
-			// its impossible to not get this key so its safe to unwrap
-			// if the key is not present then new cache file will be created
-			let mut map = cache_data.pair;
-		
-			dbg!(String::from("original map"));
-			dbg!(&map);
-			
-			// extract value from hashmap
-			let hash_in_cache = map.get(&path_to_code.to_str().unwrap().to_string());
-			let hash_calculated = hash(&path_to_code).unwrap();
-			match hash_in_cache {
-				// if contract is already in cache
-				Some(hash_in_cache) => {
-					// hash in cache == hash_calculated
-					dbg!(String::from("hash equal"));
-					dbg!(String::from("asdsad"));
-					if *hash_in_cache == hash_calculated {
-						return Ok (CompiledCacheFile {
-							path: compiled_contract_path,
-							status: CacheStatus::Cached,
-						});
-						}
-					else {
-						map.insert(path_to_code.to_str().unwrap().to_string(), hash_calculated);
-						let data = CacheJson{
-							pair: map,
-						};
-						dbg!(String::from("hash not equal"));
-						dbg!(&data);
-						let data = serde_json::to_string_pretty(&data).unwrap();
-						let mut file = File::create(path_to_compiled_cache).unwrap();
-						file.write_all(data.as_bytes()).unwrap();
 
-						return Ok (CompiledCacheFile {
-							path: compiled_contract_path,
-							status: CacheStatus::Uncached,
-						});
-					}
-				}
-				// if contract is not in cache yet
-				None => {
-						map.insert(path_to_code.to_str().unwrap().to_string(), hash_calculated);
-						let data = CacheJson{
-							pair: map,
-						};
-						dbg!(String::from("contract not in cache yet"));
-						dbg!(&data);
-						let data = serde_json::to_string_pretty(&data).unwrap();
-						let mut file = File::create(path_to_compiled_cache).unwrap();
-						file.write_all(data.as_bytes()).unwrap();
-					return Ok (CompiledCacheFile {
-						path: compiled_contract_path,
-						status: CacheStatus::Uncached,
-					});
-				}
-			}			
-				
-		}
+			let hash_in_cache = cache_data.sha256;
+
+			// compute hash from file
+			let hash_calculated = hash(&path_to_code).unwrap();
+
+
+			if *hash_in_cache == hash_calculated {
+				return Ok(CompiledCacheFile {
+					path: compiled_contract_path,
+					status: CacheStatus::Cached,
+				});
+			} else {
+				let data = CacheJson {
+					contract_path: path_to_code.to_str().unwrap().to_string(),
+					sha256: hash_calculated,
+				};
+
+				let data = serde_json::to_string_pretty(&data).unwrap();
+				let mut file = File::create(path_to_compiled_cache).unwrap();
+				file.write_all(data.as_bytes()).unwrap();
+
+				return Ok(CompiledCacheFile {
+					path: compiled_contract_path,
+					status: CacheStatus::Uncached,
+				});
+			}
+		},
+
 		// json file does not exists
 		Err(error) => {
-			dbg!{format!{"File does not exist error: {}", error}};
-			let path = path_to_code.clone();
+
 			// todo: fix dump and refactor for cleaner solution and error handling
 			let hash_calculated = hash(&path_to_code).unwrap();
-			let mut map = HashMap::new();
-			map.insert(path.to_str().unwrap().to_string(), String::from(hash_calculated.to_string()));
-			let data = CacheJson{
-				pair: map,
+			let data = CacheJson {
+				contract_path: path_to_code.to_str().unwrap().to_string(),
+				sha256: hash_calculated,
 			};
-			dbg!(String::from("File do not exist"));
-			dbg!(&data);
+
 			let data = serde_json::to_string_pretty(&data).unwrap();
 			let mut file = File::create(path_to_compiled_cache).unwrap();
 			file.write_all(data.as_bytes()).unwrap();
 			return Ok(CompiledCacheFile {
 				path: path_to_code,
-				status: CacheStatus::Uncached
-			})
-		}
+				status: CacheStatus::Uncached,
+			});
+		},
 	}
 }
-
 
 fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 	// Safe to unwrap as long as `init_buffer` has been called before
@@ -364,14 +342,15 @@ pub(crate) fn test_single_entrypoint(
 
 	// Display the exectution output if present
 	match runner.get_output(&mut vm) {
-		Ok(runner_output) =>
+		Ok(runner_output) => {
 			if !runner_output.is_empty() {
 				output.push_str(&format!(
 					"[{}]:\n{}",
 					"execution output".purple(),
 					&runner_output
 				));
-			},
+			}
+		},
 		Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
 	};
 
