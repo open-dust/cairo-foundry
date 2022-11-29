@@ -75,7 +75,7 @@ struct CacheJson {
 	sha256: String,
 }
 
-fn hash(filepath: &PathBuf) -> Result<String, String> {
+fn compute_hash(filepath: &PathBuf) -> Result<String, String> {
 	// hash filepath
 	let mut hasher = Sha256::new();
 	let mut file = File::open(filepath).map_err(|e| format!("Failed to open file: {}", e))?;
@@ -186,45 +186,50 @@ fn compile_and_list_entrypoints(
 	}
 }
 
-fn create_compiled_path(path_to_code: &PathBuf) -> PathBuf {
+fn create_compiled_contract_path(path_to_code: &PathBuf) -> PathBuf {
 	let filename = path_to_code.file_stem().expect("File does not have a file stem");
 
-	let cachedir = dirs::cache_dir().expect("Could not make cache directory");
+	let cache_dir = dirs::cache_dir().expect("Could not make cache directory");
 	let mut path_to_compiled = PathBuf::new();
-	path_to_compiled.push(&cachedir);
+	path_to_compiled.push(&cache_dir);
 	path_to_compiled.push("compiled-cairo-files");
 	path_to_compiled.push(filename);
 	path_to_compiled.set_extension("json");
 	return path_to_compiled;
 }
 
+fn dump_json_file(path: &PathBuf, data: &CacheJson) -> Result<(), String> {
+	let file = File::create(path).map_err(|op| format!("file does not exists {}", op))?;
+	let writer = BufWriter::new(file);
+	serde_json::to_writer_pretty(writer, data)
+		.map_err(|op| format!("file does not exists {}", op))?;
+	return Ok(());
+}
+
 fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 	// read individual cache file
 	// avoid same cache file because we're doing multiprocessing and getting race condition
-	let cachedir = dirs::cache_dir().expect("cache dir not supported");
+	let cache_dir = dirs::cache_dir().expect("cache dir not supported");
 	let filename = path_to_code.file_stem().unwrap().to_str().unwrap();
 
-	let mut path_to_compiled_cache = PathBuf::new();
-	path_to_compiled_cache.push(&cachedir);
-	path_to_compiled_cache.push("cache-compiled");
+	let mut cache_path = PathBuf::new();
+	cache_path.push(&cache_dir);
+	cache_path.push("cairo-foundry-cache");
 
-	// create dir
-	std::fs::create_dir_all(&path_to_compiled_cache).expect("Could not make cache directory");
-	path_to_compiled_cache.push(format!("{}.json", filename));
+	// create dir to store cache files
+	std::fs::create_dir_all(&cache_path).expect("Could not make cache directory");
+	cache_path.push(format!("{}.json", filename));
 
-	let data = read_json_file(&path_to_compiled_cache);
+	let data = read_json_file(&cache_path);
+	// compute hash from file
+	let hash_calculated = compute_hash(&path_to_code).unwrap();
+	let contract_path = path_to_code.to_str().unwrap().to_string();
 
 	match data {
 		// json file exists
 		Ok(cache_data) => {
-			let compiled_contract_path = create_compiled_path(&path_to_code);
-
+			let compiled_contract_path = create_compiled_contract_path(&path_to_code);
 			let hash_in_cache = cache_data.sha256;
-
-			// compute hash from file
-			let hash_calculated = hash(&path_to_code).unwrap();
-
-
 			if *hash_in_cache == hash_calculated {
 				return Ok(CompiledCacheFile {
 					path: compiled_contract_path,
@@ -232,34 +237,25 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 				});
 			} else {
 				let data = CacheJson {
-					contract_path: path_to_code.to_str().unwrap().to_string(),
+					contract_path,
 					sha256: hash_calculated,
 				};
 
-				let data = serde_json::to_string_pretty(&data).unwrap();
-				let mut file = File::create(path_to_compiled_cache).unwrap();
-				file.write_all(data.as_bytes()).unwrap();
-
+				dump_json_file(&cache_path, &data)?;
 				return Ok(CompiledCacheFile {
-					path: compiled_contract_path,
+					path: path_to_code,
 					status: CacheStatus::Uncached,
 				});
 			}
 		},
 
 		// json file does not exists
-		Err(error) => {
-
-			// todo: fix dump and refactor for cleaner solution and error handling
-			let hash_calculated = hash(&path_to_code).unwrap();
+		Err(_) => {
 			let data = CacheJson {
-				contract_path: path_to_code.to_str().unwrap().to_string(),
+				contract_path,
 				sha256: hash_calculated,
 			};
-
-			let data = serde_json::to_string_pretty(&data).unwrap();
-			let mut file = File::create(path_to_compiled_cache).unwrap();
-			file.write_all(data.as_bytes()).unwrap();
+			dump_json_file(&cache_path, &data)?;
 			return Ok(CompiledCacheFile {
 				path: path_to_code,
 				status: CacheStatus::Uncached,
