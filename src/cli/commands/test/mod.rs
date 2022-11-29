@@ -216,8 +216,13 @@ fn read_cache(path_to_code: PathBuf) -> Result<CompiledCacheFile, String> {
 	cache_path.push(&cache_dir);
 	cache_path.push("cairo-foundry-cache");
 
-	// create dir to store cache files
-	std::fs::create_dir_all(&cache_path).expect("Could not make cache directory");
+	// create dir if not exist to store cache files
+	// cache dir will be in os_cache_dir/cairo-foundry-cache
+	// os_cache_dir is different for each os
+	if !cache_path.exists() {
+		std::fs::create_dir(&cache_path).expect("Could not make cache directory");
+	}
+	// cache file will be in os_cache_dir/cairo-foundry-cache/contract_name.json
 	cache_path.push(format!("{}.json", filename));
 
 	let data = read_json_file(&cache_path);
