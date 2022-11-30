@@ -23,6 +23,14 @@
 
 ## 🏗️ Architecture
 
+Flow Diagram:
+
+![cairo-foundry-architecture-diagram](resources/img/flow_diagram.png)
+
+</br>
+
+Objective: match Foundry and/or Protostar utils functions
+
 ![cairo-foundry](resources/img/architecture.png)
 
 ## 🎟️ Description
