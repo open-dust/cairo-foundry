@@ -21,7 +21,7 @@ pub enum Commands {
 	Test(test::TestArgs),
 }
 
-/// Bahaviour of a command
+/// Behaviour of a command
 pub trait CommandExecution<F: Formattable> {
 	fn exec(&self) -> Result<F, String>;
 }

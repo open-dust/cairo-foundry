@@ -20,6 +20,10 @@ pub struct ListArgs {
 	pub root: PathBuf,
 }
 
+/// Function used to validate directory type of the specified Path
+/// `path: &str` the path to test
+/// Returns the `PathBuf` for the given path
+/// or Err, which means that path does not exist or is not a dir.
 pub fn path_is_valid_directory(path: &str) -> Result<PathBuf, String> {
 	let path = PathBuf::from(path);
 	if path.exists() && path.is_dir() {
@@ -51,6 +55,11 @@ impl fmt::Display for ListOutput {
 }
 
 impl CommandExecution<ListOutput> for ListArgs {
+	/// This Command List and store all Cairo tests files within root directory.
+	/// Every file in Root directory must follow the following regex: "^test_.*\.cairo$"
+	/// to be added to the result.
+	///
+	/// Returns a `ListOutput` struct with tests files in a `PathBuf` vector.
 	fn exec(&self) -> Result<ListOutput, String> {
 		info!("Listing files within directory {:?}", self.root);
 
