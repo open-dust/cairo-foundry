@@ -61,9 +61,9 @@ impl fmt::Display for Output {
 impl CommandExecution<Output> for Commands {
 	fn exec(&self) -> Result<Output, String> {
 		match &self {
-			Commands::List(args) => args.exec().map(|o| Output(CommandOutputs::List(o))),
-			Commands::Execute(args) => args.exec().map(|o| Output(CommandOutputs::Execute(o))),
-			Commands::Test(args) => args.exec().map(|o| Output(CommandOutputs::Test(o))),
+			Self::List(args) => args.exec().map(|o| Output(CommandOutputs::List(o))),
+			Self::Execute(args) => args.exec().map(|o| Output(CommandOutputs::Execute(o))),
+			Self::Test(args) => args.exec().map(|o| Output(CommandOutputs::Test(o))),
 		}
 	}
 }

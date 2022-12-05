@@ -152,7 +152,7 @@ pub(crate) fn test_single_entrypoint(
 	let execution_uuid = Uuid::new_v4();
 	init_buffer(execution_uuid);
 	let res_cairo_run = cairo_run(
-		&path_to_compiled,
+		path_to_compiled,
 		&test_entrypoint,
 		false,
 		false,
@@ -234,7 +234,7 @@ fn run_tests_for_one_file(
 			test_single_entrypoint(
 				&path_to_compiled,
 				test_entrypoint,
-				&hint_processor,
+				hint_processor,
 				Some(hooks.clone()),
 			)
 		})
