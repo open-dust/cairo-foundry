@@ -16,7 +16,7 @@ pub fn run_single_test(test_name: &str, test_path: &PathBuf) -> (String, bool) {
 				"FAILED".red(),
 				e
 			);
-			return (output, false);
+			return (output, false)
 		},
 	};
 

@@ -162,7 +162,7 @@ pub(crate) fn test_single_entrypoint(
 				"FAILED".red(),
 				e
 			));
-			return (output, false);
+			return (output, false)
 		},
 	};
 
@@ -213,15 +213,14 @@ pub(crate) fn test_single_entrypoint(
 
 	// Display the exectution output if present
 	match runner.get_output(&mut vm) {
-		Ok(runner_output) => {
+		Ok(runner_output) =>
 			if !runner_output.is_empty() {
 				output.push_str(&format!(
 					"[{}]:\n{}",
 					"execution output".purple(),
 					&runner_output
 				));
-			}
-		},
+			},
 		Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
 	};
 
@@ -238,16 +237,11 @@ fn run_tests_for_one_file(
 ) -> TestResult {
 	let program_json = match deserialize_program_json(&path_to_compiled) {
 		Ok(program_json) => program_json,
-		Err(e) => {
+		Err(e) =>
 			return TestResult {
-				output: format!(
-					"[{}] - Invalid program\n{}",
-					"FAILED".red(),
-					e
-				),
+				output: format!("[{}] - Invalid program\n{}", "FAILED".red(), e),
 				success: false,
-			}
-		},
+			},
 	};
 
 	let (tests_output, tests_success) = test_entrypoints
