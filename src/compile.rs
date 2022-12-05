@@ -68,7 +68,7 @@ pub fn compile(path_to_cairo_file: &PathBuf) -> Result<PathBuf, Error> {
 					e
 				)
 			}),
-		))
+		));
 	}
 
 	// Retrieve only the file name to create a clean compiled file name.

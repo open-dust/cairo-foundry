@@ -166,7 +166,7 @@ pub(crate) fn test_single_entrypoint(
 		},
 	};
 
-	let res_cairo_run = cairo_run(program, false, false, hint_processor, execution_uuid, hooks);
+	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks);
 	let duration = start.elapsed();
 	let (opt_runner_and_output, test_success) = match res_cairo_run {
 		Ok(res) => {
@@ -241,7 +241,7 @@ fn run_tests_for_one_file(
 		Err(e) => {
 			return TestResult {
 				output: format!(
-					"[{}] {}\nError: failed to deserialize program",
+					"[{}] - Invalid program\n{}",
 					"FAILED".red(),
 					e
 				),
