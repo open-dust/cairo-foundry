@@ -19,21 +19,6 @@ use crate::{
 	hooks::HOOKS_VAR_NAME,
 };
 
-pub fn cairo_pre_run<'a>(
-	path: &'a Path,
-	entrypoint: &'a str,
-	hint_processor: &'a dyn HintProcessor,
-	execution_uudi: Uuid,
-	opt_hooks: Option<Hooks>,
-) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
-	let program = match Program::new(path, entrypoint) {
-		Ok(program) => program,
-		Err(error) => return Err(CairoRunError::Program(error)),
-	};
-
-	cairo_run(program, hint_processor, execution_uudi, opt_hooks)
-}
-
 pub fn cairo_run(
 	program: Program,
 	hint_processor: &dyn HintProcessor,
