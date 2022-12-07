@@ -8,6 +8,8 @@ use cairo_rs::{
 	hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
 		BuiltinHintProcessor, HintFunc,
 	},
+	serde::deserialize_program::{deserialize_program_json, ProgramJson},
+	types::program::Program,
 	vm::{
 		errors::{cairo_run_errors::CairoRunError, vm_errors::VirtualMachineError},
 		hook::Hooks,
@@ -142,7 +144,7 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 }
 
 pub(crate) fn test_single_entrypoint(
-	path_to_compiled: &PathBuf,
+	program: ProgramJson,
 	test_entrypoint: String,
 	hint_processor: &BuiltinHintProcessor,
 	hooks: Option<Hooks>,
@@ -151,15 +153,18 @@ pub(crate) fn test_single_entrypoint(
 	let mut output = String::new();
 	let execution_uuid = Uuid::new_v4();
 	init_buffer(execution_uuid);
-	let res_cairo_run = cairo_run(
-		path_to_compiled,
-		&test_entrypoint,
-		false,
-		false,
-		hint_processor,
-		execution_uuid,
-		hooks,
-	);
+	let program = match Program::from_json(program, &test_entrypoint) {
+		Ok(program) => program,
+		Err(e) => {
+			output.push_str(&format!(
+				"[{}] {}\nError: failed to deserialize program",
+				"FAILED".red(),
+				e
+			));
+			return (output, false)
+		},
+	};
+	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks);
 	let duration = start.elapsed();
 	let (opt_runner_and_output, test_success) = match res_cairo_run {
 		Ok(res) => {
@@ -228,11 +233,20 @@ fn run_tests_for_one_file(
 	test_entrypoints: Vec<String>,
 	hooks: Hooks,
 ) -> TestResult {
+	let program_json = match deserialize_program_json(&path_to_compiled) {
+		Ok(program_json) => program_json,
+		Err(e) =>
+			return TestResult {
+				output: format!("[{}] - Invalid program\n{}", "FAILED".red(), e),
+				success: false,
+			},
+	};
+
 	let (tests_output, tests_success) = test_entrypoints
 		.into_iter()
 		.map(|test_entrypoint| {
 			test_single_entrypoint(
-				&path_to_compiled,
+				program_json.clone(),
 				test_entrypoint,
 				hint_processor,
 				Some(hooks.clone()),
