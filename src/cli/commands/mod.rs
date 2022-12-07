@@ -9,6 +9,8 @@ mod execute;
 mod list;
 // test module: contains everything related to the `Test` command
 pub mod test;
+// clean module: contains everything related to the `Clean` command
+mod clean;
 
 /// Enum of all supported commands
 #[derive(Subcommand)]
@@ -19,6 +21,8 @@ pub enum Commands {
 	Execute(execute::ExecuteArgs),
 	// Test cairo programs
 	Test(test::TestArgs),
+	// Cleans the cache files
+	Clean(clean::CleanArgs),
 }
 
 /// Bahaviour of a command
@@ -30,6 +34,7 @@ enum CommandOutputs {
 	List(list::ListOutput),
 	Execute(execute::ExecuteOutput),
 	Test(test::TestOutput),
+	Clean(clean::CleanOutput),
 }
 
 /// The executed command output
@@ -44,6 +49,7 @@ impl Serialize for Output {
 			CommandOutputs::List(output) => output.serialize(serializer),
 			CommandOutputs::Execute(output) => output.serialize(serializer),
 			CommandOutputs::Test(output) => output.serialize(serializer),
+			CommandOutputs::Clean(output) => output.serialize(serializer),
 		}
 	}
 }
@@ -54,6 +60,7 @@ impl fmt::Display for Output {
 			CommandOutputs::List(output) => output.fmt(f),
 			CommandOutputs::Execute(output) => output.fmt(f),
 			CommandOutputs::Test(output) => output.fmt(f),
+			CommandOutputs::Clean(output) => output.fmt(f),
 		}
 	}
 }
@@ -64,6 +71,7 @@ impl CommandExecution<Output> for Commands {
 			Commands::List(args) => args.exec().map(|o| Output(CommandOutputs::List(o))),
 			Commands::Execute(args) => args.exec().map(|o| Output(CommandOutputs::Execute(o))),
 			Commands::Test(args) => args.exec().map(|o| Output(CommandOutputs::Test(o))),
+			Commands::Clean(args) => args.exec().map(|o| Output(CommandOutputs::Clean(o))),
 		}
 	}
 }
