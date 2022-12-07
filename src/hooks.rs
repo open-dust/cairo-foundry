@@ -11,15 +11,15 @@ use crate::hints::MOCK_CALL_KEY;
 pub const HOOKS_VAR_NAME: &str = "hooks";
 
 /// Called before an instruction is executed by the virtual machine (VM).
-/// 
+///
 /// This function is called before the VM will execute an instruction.
 /// The given `&mut VirtualMachine` allows the VM state to be modified
 /// according to given `&mut ExecutionScopes`.
-/// 
+///
 /// When no error is encountered, returns an empty success value.
 /// Otherwise, returns a VirtualMachineError
-/// 
-/// `mock_call` hint is using `pre_step_instruction` to modify 
+///
+/// `mock_call` hint is using `pre_step_instruction` to modify
 /// VM allocation pointer (ap) and program counter (pc) in order to return mocked value.
 pub fn pre_step_instruction(
 	vm: &mut VirtualMachine,
