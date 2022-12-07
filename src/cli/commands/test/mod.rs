@@ -164,7 +164,7 @@ pub(crate) fn test_single_entrypoint(
 			return (output, false)
 		},
 	};
-
+	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks);
 	let duration = start.elapsed();
 	let (opt_runner_and_output, test_success) = match res_cairo_run {
 		Ok(res) => {
