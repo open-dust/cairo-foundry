@@ -27,10 +27,6 @@ fn returns_error_in_case_of_failure() {
 	.exec();
 
 	assert!(result.is_err());
-	assert_eq!(
-		"IO error for operation on invalid: No such file or directory (os error 2)",
-		result.unwrap_err()
-	);
 }
 
 #[test]

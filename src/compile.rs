@@ -46,7 +46,7 @@ pub enum Error {
 ///
 /// ```ignore
 /// let mut program = PathBuf::from("path_to_your_program");
-/// let compiled_program_path = compile(&program);
+/// let compiled_program_path = compile(&program)?;
 /// ```
 pub fn compile(path_to_cairo_file: &PathBuf) -> Result<PathBuf, Error> {
 	let path_to_cairo_compiler = which(CAIRO_COMPILE_BINARY)?;
@@ -68,7 +68,7 @@ pub fn compile(path_to_cairo_file: &PathBuf) -> Result<PathBuf, Error> {
 					e
 				)
 			}),
-		))
+		));
 	}
 
 	// Retrieve only the file name to create a clean compiled file name.

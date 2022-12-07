@@ -1,12 +1,21 @@
 use crate::cli::formatter::Formattable;
 use clap::Subcommand;
 use serde::Serialize;
-use std::fmt;
+use std::{error, fmt};
+use thiserror::Error;
 
 /// list module: contains everything related to the `List` command
 mod list;
 // test module: contains everything related to the `Test` command
 pub mod test;
+
+#[derive(Error, Debug)]
+pub enum CommandError {
+	#[error(transparent)]
+	ListCommandError(#[from] list::ListCommandError),
+	#[error(transparent)]
+	TestCommandError(#[from] test::TestCommandError),
+}
 
 /// Enum of all supported commands
 #[derive(Subcommand)]
@@ -17,9 +26,9 @@ pub enum Commands {
 	Test(test::TestArgs),
 }
 
-/// Bahaviour of a command
-pub trait CommandExecution<F: Formattable> {
-	fn exec(&self) -> Result<F, String>;
+/// Behaviour of a command
+pub trait CommandExecution<F: Formattable, E: error::Error> {
+	fn exec(&self) -> Result<F, E>;
 }
 
 enum CommandOutputs {
@@ -51,11 +60,17 @@ impl fmt::Display for Output {
 	}
 }
 
-impl CommandExecution<Output> for Commands {
-	fn exec(&self) -> Result<Output, String> {
+impl CommandExecution<Output, CommandError> for Commands {
+	fn exec(&self) -> Result<Output, CommandError> {
 		match &self {
-			Commands::List(args) => args.exec().map(|o| Output(CommandOutputs::List(o))),
-			Commands::Test(args) => args.exec().map(|o| Output(CommandOutputs::Test(o))),
+			Commands::List(args) => args
+				.exec()
+				.map_err(CommandError::ListCommandError)
+				.map(|o| Output(CommandOutputs::List(o))),
+			Commands::Test(args) => args
+				.exec()
+				.map_err(CommandError::TestCommandError)
+				.map(|o| Output(CommandOutputs::Test(o))),
 		}
 	}
 }
