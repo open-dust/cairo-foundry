@@ -7,6 +7,7 @@ version     = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+assert_matches = "1.5.0"
 cairo-rs = { git = "https://github.com/onlydustxyz/cairo-rs", branch = "cairo-foundry", features = [
 	"hooks",
 ] }

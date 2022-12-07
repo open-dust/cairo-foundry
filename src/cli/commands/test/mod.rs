@@ -31,7 +31,7 @@ use super::{
 
 use crate::{
 	cairo_run::cairo_run,
-	compile::{compile, Error},
+	compile::{self, compile},
 	hints::{clear_buffer, expect_revert, get_buffer, init_buffer},
 	hooks,
 };
@@ -44,11 +44,10 @@ pub enum TestCommandError {
 	RunTestError(String, PathBuf, String),
 	#[error(transparent)]
 	IOError(#[from] io::Error),
-	// transparent error for json serde
 	#[error(transparent)]
 	JsonError(#[from] serde_json::Error),
 	#[error(transparent)]
-	CompileError(#[from] Error),
+	CompileError(#[from] compile::Error),
 	#[error(transparent)]
 	ProgramError(#[from] program_errors::ProgramError),
 	#[error(transparent)]
@@ -203,15 +202,14 @@ pub(crate) fn test_single_entrypoint(
 
 	// Display the execution output if present
 	match runner.get_output(&mut vm) {
-		Ok(runner_output) => {
+		Ok(runner_output) =>
 			if !runner_output.is_empty() {
 				output.push_str(&format!(
 					"[{}]:\n{}",
 					"execution output".purple(),
 					&runner_output
 				));
-			}
-		},
+			},
 		Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
 	};
 
@@ -267,15 +265,14 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 			.map(compile_and_list_entrypoints)
 			.map(|res| -> Result<TestResult, TestCommandError> {
 				match res {
-					Ok((path_to_original, path_to_compiled, test_entrypoints)) => {
+					Ok((path_to_original, path_to_compiled, test_entrypoints)) =>
 						run_tests_for_one_file(
 							&hint_processor,
 							path_to_original,
 							path_to_compiled,
 							test_entrypoints,
 							hooks.clone(),
-						)
-					},
+						),
 					Err(err) => Err(err),
 				}
 			})

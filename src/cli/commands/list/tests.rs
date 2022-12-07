@@ -1,5 +1,7 @@
+use assert_matches::assert_matches;
+
 use super::{ListArgs, ListOutput};
-use crate::cli::commands::CommandExecution;
+use crate::cli::commands::{list::ListCommandError, CommandExecution};
 use std::path::PathBuf;
 
 #[test]
@@ -26,7 +28,7 @@ fn returns_error_in_case_of_failure() {
 	}
 	.exec();
 
-	assert!(result.is_err());
+	assert_matches!(result, Err(ListCommandError::ListFilesError(_)));
 }
 
 #[test]

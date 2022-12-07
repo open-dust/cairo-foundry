@@ -27,7 +27,7 @@ pub enum Commands {
 }
 
 /// Behaviour of a command
-pub trait CommandExecution<F: Formattable, E: error::Error> {
+pub trait CommandExecution<F: Formattable, E: error::Error + Into<CommandError>> {
 	fn exec(&self) -> Result<F, E>;
 }
 
@@ -63,14 +63,10 @@ impl fmt::Display for Output {
 impl CommandExecution<Output, CommandError> for Commands {
 	fn exec(&self) -> Result<Output, CommandError> {
 		match &self {
-			Commands::List(args) => args
-				.exec()
-				.map_err(CommandError::ListCommandError)
-				.map(|o| Output(CommandOutputs::List(o))),
-			Commands::Test(args) => args
-				.exec()
-				.map_err(CommandError::TestCommandError)
-				.map(|o| Output(CommandOutputs::Test(o))),
+			Commands::List(args) =>
+				args.exec().map_err(|e| e.into()).map(|o| Output(CommandOutputs::List(o))),
+			Commands::Test(args) =>
+				args.exec().map_err(|e| e.into()).map(|o| Output(CommandOutputs::Test(o))),
 		}
 	}
 }
