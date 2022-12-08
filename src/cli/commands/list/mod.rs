@@ -55,11 +55,22 @@ impl fmt::Display for ListOutput {
 }
 
 impl CommandExecution<ListOutput> for ListArgs {
-	/// This Command List and store all Cairo tests files within root directory.
-	/// Every file in Root directory must follow the following regex: "^test_.*\.cairo$"
-	/// to be added to the result.
+	/// Implementation of CommandExecution Trait for the List Command
 	///
-	/// Returns a `ListOutput` struct with tests files in a `PathBuf` vector.
+	/// The List Command lists and returns the 'ListOutput' of all the valid
+	/// Cairo tests files within the ListArgs root directory(PathBuf).
+	/// To be valid, the filepath must follow the following regex:
+	/// 		"^test_.*\.cairo$"
+	///
+	/// # Examples
+	/// 	test_cairo_contracts/test_invalid_program.cairo => VALID
+	/// 	test_hints/test/minor/failing.cairo => VALID
+	/// 	test_cairo_hints/test_mock_call.cairo.test => INVALID, ends with "test" not ".cairo"
+	/// 	mytest_hints/test_skip.cairo => INVALID, starts with "mytests" not "test_"
+	///
+	/// When using the cairo-compile command, the root directory is the one specified by the option "--root"
+	///
+	/// Returns a `ListOutput` struct with all valid tests files in the `.files: vector<PathBuf>` or Err.
 	fn exec(&self) -> Result<ListOutput, String> {
 		info!("Listing files within directory {:?}", self.root);
 
