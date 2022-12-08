@@ -3,8 +3,6 @@ use clap::Subcommand;
 use serde::Serialize;
 use std::fmt;
 
-/// execute module: contains everything related to the `Execute` command
-mod execute;
 /// list module: contains everything related to the `List` command
 mod list;
 // test module: contains everything related to the `Test` command
@@ -17,8 +15,6 @@ mod clean;
 pub enum Commands {
 	/// List test files
 	List(list::ListArgs),
-	/// Execute compiled cairo program
-	Execute(execute::ExecuteArgs),
 	// Test cairo programs
 	Test(test::TestArgs),
 	// Cleans the cache files
@@ -32,7 +28,6 @@ pub trait CommandExecution<F: Formattable> {
 
 enum CommandOutputs {
 	List(list::ListOutput),
-	Execute(execute::ExecuteOutput),
 	Test(test::TestOutput),
 	Clean(clean::CleanOutput),
 }
@@ -47,7 +42,6 @@ impl Serialize for Output {
 	{
 		match &self.0 {
 			CommandOutputs::List(output) => output.serialize(serializer),
-			CommandOutputs::Execute(output) => output.serialize(serializer),
 			CommandOutputs::Test(output) => output.serialize(serializer),
 			CommandOutputs::Clean(output) => output.serialize(serializer),
 		}
@@ -58,7 +52,6 @@ impl fmt::Display for Output {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match &self.0 {
 			CommandOutputs::List(output) => output.fmt(f),
-			CommandOutputs::Execute(output) => output.fmt(f),
 			CommandOutputs::Test(output) => output.fmt(f),
 			CommandOutputs::Clean(output) => output.fmt(f),
 		}
