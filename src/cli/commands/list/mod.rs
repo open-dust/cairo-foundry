@@ -70,7 +70,8 @@ impl CommandExecution<ListOutput> for ListArgs {
 	///
 	/// When using the cairo-compile command, the root directory is the one specified by the option "--root"
 	///
-	/// Returns a `ListOutput` struct with all valid tests files in the `.files: vector<PathBuf>` or Err.
+	/// Returns a `ListOutput` struct with all valid tests files in the `.files: vector<PathBuf>` or an error `Err<String>`
+	/// which is the first Error encoutered during the processing of the root directory.
 	fn exec(&self) -> Result<ListOutput, String> {
 		info!("Listing files within directory {:?}", self.root);
 
