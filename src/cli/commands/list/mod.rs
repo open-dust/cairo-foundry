@@ -8,6 +8,7 @@ use lazy_static::lazy_static;
 use log::info;
 use regex::Regex;
 use serde::Serialize;
+use thiserror::Error;
 use walkdir::WalkDir;
 
 use super::CommandExecution;
@@ -18,6 +19,12 @@ pub struct ListArgs {
 	/// Root path
 	#[clap(short, long, value_hint=ValueHint::DirPath, value_parser=path_is_valid_directory)]
 	pub root: PathBuf,
+}
+
+#[derive(Error, Debug)]
+pub enum ListCommandError {
+	#[error(transparent)]
+	ListFilesError(#[from] walkdir::Error),
 }
 
 pub fn path_is_valid_directory(path: &str) -> Result<PathBuf, String> {
@@ -50,8 +57,8 @@ impl fmt::Display for ListOutput {
 	}
 }
 
-impl CommandExecution<ListOutput> for ListArgs {
-	fn exec(&self) -> Result<ListOutput, String> {
+impl CommandExecution<ListOutput, ListCommandError> for ListArgs {
+	fn exec(&self) -> Result<ListOutput, ListCommandError> {
 		info!("Listing files within directory {:?}", self.root);
 
 		lazy_static! {
@@ -70,10 +77,9 @@ impl CommandExecution<ListOutput> for ListArgs {
 						None
 					}
 				},
-				Err(err) => Some(Err(err)),
+				Err(err) => Some(Err(ListCommandError::ListFilesError(err))),
 			})
-			.collect::<Result<Vec<_>, _>>()
-			.map_err(|err| err.to_string())?;
+			.collect::<Result<Vec<_>, ListCommandError>>()?;
 		test_files.sort();
 
 		Ok(ListOutput { files: test_files })

@@ -9,7 +9,7 @@ use cairo_rs::{
 		BuiltinHintProcessor, HintFunc,
 	},
 	serde::deserialize_program::{deserialize_program_json, ProgramJson},
-	types::program::Program,
+	types::{errors::program_errors, program::Program},
 	vm::{
 		errors::{cairo_run_errors::CairoRunError, vm_errors::VirtualMachineError},
 		hook::Hooks,
@@ -20,20 +20,41 @@ use colored::Colorize;
 use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
-use std::{fmt::Display, fs, path::PathBuf, sync::Arc, time::Instant};
+use std::{fmt::Display, fs, io, path::PathBuf, sync::Arc, time::Instant};
+use thiserror::Error;
 use uuid::Uuid;
 
 use super::{
-	list::{path_is_valid_directory, ListArgs, ListOutput},
+	list::{path_is_valid_directory, ListArgs, ListCommandError, ListOutput},
 	CommandExecution,
 };
 
 use crate::{
 	cairo_run::cairo_run,
-	compile::compile,
+	compile::{self, compile},
 	hints::{clear_buffer, expect_revert, get_buffer, init_buffer},
 	hooks,
 };
+
+#[derive(Error, Debug)]
+pub enum TestCommandError {
+	#[error("Failed to list test entrypoints for file {0}: {1}")]
+	ListEntrypointsError(PathBuf, String),
+	#[error("Failed to compile file {0}: {1}")]
+	RunTestError(String, PathBuf, String),
+	#[error(transparent)]
+	IOError(#[from] io::Error),
+	#[error(transparent)]
+	JsonError(#[from] serde_json::Error),
+	#[error(transparent)]
+	CompileError(#[from] compile::Error),
+	#[error(transparent)]
+	ProgramError(#[from] program_errors::ProgramError),
+	#[error(transparent)]
+	CairoRunError(#[from] CairoRunError),
+	#[error(transparent)]
+	ListCommandError(#[from] ListCommandError),
+}
 
 #[derive(Args, Debug)]
 pub struct TestArgs {
@@ -47,12 +68,10 @@ pub struct TestResult {
 	pub success: bool,
 }
 
-fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, String> {
+fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, TestCommandError> {
 	let re = Regex::new(r"__main__.(test_\w+)$").expect("Should be a valid regex");
-	let data =
-		fs::read_to_string(compiled_path).map_err(|err| format!("File does not exist: {}", err))?;
-	let json = serde_json::from_str::<Value>(&data)
-		.map_err(|err| format!("Compilation output is not a valid JSON: {}", err))?;
+	let data = fs::read_to_string(compiled_path)?;
+	let json = serde_json::from_str::<Value>(&data)?;
 	let mut test_entrypoints = Vec::new();
 
 	let identifiers = json["identifiers"].as_object();
@@ -106,7 +125,7 @@ fn setup_hooks() -> Hooks {
 	Hooks::new(Arc::new(hooks::pre_step_instruction))
 }
 
-fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, String> {
+fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, ListCommandError> {
 	ListArgs {
 		root: PathBuf::from(root),
 	}
@@ -114,24 +133,12 @@ fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, String> {
 	.map(|cmd_output: ListOutput| cmd_output.files)
 }
 
-fn compile_and_list_entrypoints(path_to_code: PathBuf) -> Option<(PathBuf, PathBuf, Vec<String>)> {
-	match compile(&path_to_code) {
-		Ok(path_to_compiled) => match list_test_entrypoints(&path_to_compiled) {
-			Ok(entrypoints) => Some((path_to_code, path_to_compiled, entrypoints)),
-			Err(e) => {
-				eprintln!(
-					"Failed to list test entrypoints for file {}: {}",
-					path_to_compiled.display(),
-					e
-				);
-				None
-			},
-		},
-		Err(e) => {
-			eprintln!("{}", e);
-			None
-		},
-	}
+fn compile_and_list_entrypoints(
+	path_to_code: PathBuf,
+) -> Result<(PathBuf, PathBuf, Vec<String>), TestCommandError> {
+	let path_to_compiled = compile(&path_to_code)?;
+	let entrypoints = list_test_entrypoints(&path_to_compiled)?;
+	Ok((path_to_code, path_to_compiled, entrypoints))
 }
 
 fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
@@ -148,22 +155,14 @@ pub(crate) fn test_single_entrypoint(
 	test_entrypoint: String,
 	hint_processor: &BuiltinHintProcessor,
 	hooks: Option<Hooks>,
-) -> (String, bool) {
+) -> Result<(String, bool), TestCommandError> {
 	let start = Instant::now();
 	let mut output = String::new();
 	let execution_uuid = Uuid::new_v4();
 	init_buffer(execution_uuid);
-	let program = match Program::from_json(program, &test_entrypoint) {
-		Ok(program) => program,
-		Err(e) => {
-			output.push_str(&format!(
-				"[{}] {}\nError: failed to deserialize program",
-				"FAILED".red(),
-				e
-			));
-			return (output, false)
-		},
-	};
+
+	let program = Program::from_json(program, &test_entrypoint)?;
+
 	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks);
 	let duration = start.elapsed();
 	let (opt_runner_and_output, test_success) = match res_cairo_run {
@@ -192,24 +191,16 @@ pub(crate) fn test_single_entrypoint(
 			));
 			(None, false)
 		},
-		Err(e) => {
-			output.push_str(&format!(
-				"[{}] {}\nError: {}\n\n",
-				"FAILED".red(),
-				test_entrypoint,
-				e
-			));
-			(None, false)
-		},
+		Err(e) => Err(TestCommandError::CairoRunError(e))?,
 	};
 
 	purge_hint_buffer(&execution_uuid, &mut output);
 	let (mut runner, mut vm) = match opt_runner_and_output {
 		Some(runner_and_vm) => runner_and_vm,
-		None => return (output, test_success),
+		None => return Ok((output, test_success)),
 	};
 
-	// Display the exectution output if present
+	// Display the execution output if present
 	match runner.get_output(&mut vm) {
 		Ok(runner_output) =>
 			if !runner_output.is_empty() {
@@ -223,7 +214,7 @@ pub(crate) fn test_single_entrypoint(
 	};
 
 	output.push('\n');
-	(output, test_success)
+	Ok((output, test_success))
 }
 
 fn run_tests_for_one_file(
@@ -232,15 +223,8 @@ fn run_tests_for_one_file(
 	path_to_compiled: PathBuf,
 	test_entrypoints: Vec<String>,
 	hooks: Hooks,
-) -> TestResult {
-	let program_json = match deserialize_program_json(&path_to_compiled) {
-		Ok(program_json) => program_json,
-		Err(e) =>
-			return TestResult {
-				output: format!("[{}] - Invalid program\n{}", "FAILED".red(), e),
-				success: false,
-			},
-	};
+) -> Result<TestResult, TestCommandError> {
+	let program_json = deserialize_program_json(&path_to_compiled)?;
 
 	let (tests_output, tests_success) = test_entrypoints
 		.into_iter()
@@ -252,41 +236,52 @@ fn run_tests_for_one_file(
 				Some(hooks.clone()),
 			)
 		})
+		.collect::<Result<Vec<_>, TestCommandError>>()?
+		.into_iter()
 		.fold((String::new(), true), |mut a, b| {
 			a.0.push_str(&b.0);
 			a.1 &= b.1;
 			a
 		});
 
-	TestResult {
+	Ok(TestResult {
 		output: format!(
 			"Running tests in file {}\n{}",
 			path_to_original.display(),
 			tests_output
 		),
 		success: tests_success,
-	}
+	})
 }
 
-impl CommandExecution<TestOutput> for TestArgs {
-	fn exec(&self) -> Result<TestOutput, String> {
+impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
+	fn exec(&self) -> Result<TestOutput, TestCommandError> {
 		// Declare hints
 		let hint_processor = setup_hint_processor();
 		let hooks = setup_hooks();
 
 		list_cairo_files(&self.root)?
 			.into_par_iter()
-			.filter_map(compile_and_list_entrypoints)
-			.map(|(path_to_original, path_to_compiled, test_entrypoints)| {
-				run_tests_for_one_file(
-					&hint_processor,
-					path_to_original,
-					path_to_compiled,
-					test_entrypoints,
-					hooks.clone(),
-				)
+			.map(compile_and_list_entrypoints)
+			.map(|res| -> Result<TestResult, TestCommandError> {
+				match res {
+					Ok((path_to_original, path_to_compiled, test_entrypoints)) =>
+						run_tests_for_one_file(
+							&hint_processor,
+							path_to_original,
+							path_to_compiled,
+							test_entrypoints,
+							hooks.clone(),
+						),
+					Err(err) => Err(err),
+				}
 			})
-			.for_each(|test_result| println!("{}", test_result.output));
+			.for_each(|test_result| match test_result {
+				Ok(result) => {
+					println!("{}", result.output);
+				},
+				Err(err) => println!("{}", format!("Error: {}", err).red()),
+			});
 
 		Ok(Default::default())
 	}
