@@ -1,16 +1,14 @@
-mod tests;
-use dirs;
+#[cfg(test)]
+
 use std::{
 	fmt::Debug,
-	fs::{File, read_to_string},
-	io::{self, Write},
-	path::{PathBuf, Path},
-	process::Command,
+	fs::{read_to_string},
+	io::{self},
+	path::{PathBuf},
 };
+
 use thiserror::Error;
 
-use std::path::StripPrefixError;
-use std::io::BufReader;
 use serde::{Serialize, Deserialize};
 
 #[derive(Error, Debug)]
@@ -29,8 +27,8 @@ pub struct CacheJson {
 	pub hash: String,
 }
 
-pub fn read_json_file(path: &PathBuf) -> Result<CacheJson, Error> {
-	let file = read_to_string(path).map_err(|op| Error::FileNotFound(path.to_owned(), op))?;
-	let data = serde_json::from_str::<CacheJson>(file.as_str()).map_err(|op| Error::DeserializeError(file, op))?;
+pub fn read_json_file(path: &PathBuf) -> Result<CacheJson, CacheError> {
+	let file = read_to_string(path).map_err(|op| CacheError::FileNotFound(path.to_owned(), op))?;
+	let data = serde_json::from_str::<CacheJson>(file.as_str()).map_err(|op| CacheError::DeserializeError(file, op))?;
 	return Ok(data);
 }
