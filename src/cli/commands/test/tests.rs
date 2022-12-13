@@ -1,6 +1,8 @@
 use crate::cli::commands::{test::TestArgs, CommandExecution};
 use cairo_rs::serde::deserialize_program::deserialize_program_json;
 use std::path::PathBuf;
+use assert_matches::assert_matches;
+
 
 // import io::Error;
 use std::{io::{self}};
@@ -71,9 +73,8 @@ fn test_read_json_negative_0() {
 	let current_dir = std::env::current_dir().unwrap();
 	let root = PathBuf::from(current_dir.join("test_compiled_contracts"));
 	let path_to_compiled_contract_path = PathBuf::from(root.join("test_inexistent.json"));
-	let result = read_json_file(&path_to_compiled_contract_path).is_err();
-	assert!(result);
-	// TODO: test error type
+	let result = read_json_file(&path_to_compiled_contract_path);
+	assert_matches!(result, Err(CacheError::FileNotFound(_)));
 }
 
 #[test]
@@ -81,7 +82,6 @@ fn test_read_json_negative_1() {
 	let current_dir = std::env::current_dir().unwrap();
 	let root = PathBuf::from(current_dir.join("test_compiled_contracts"));
 	let path_to_compiled_contract_path = PathBuf::from(root.join("test_invalid_structure.json"));
-	let result = read_json_file(&path_to_compiled_contract_path).is_err();
-	assert!(result);
-	// TODO: test error type
+	let result = read_json_file(&path_to_compiled_contract_path);
+	assert_matches!(result, Err(CacheError::DeserializeError(_, _)));
 }
