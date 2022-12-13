@@ -1,16 +1,16 @@
 use dirs;
 use std::{
 	fmt::Debug,
-	fs::File,
+	fs::{File, read_to_string},
 	io::{self, Write},
-	path::PathBuf,
+	path::{PathBuf, Path},
 	process::Command,
 };
 use thiserror::Error;
-use which::{which, Error as WhichError};
 
 use std::path::StripPrefixError;
-
+use std::io::BufReader;
+use serde::{Serialize, Deserialize};
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -30,12 +30,22 @@ pub enum Error {
     DirCreation(String, io::Error),
     #[error("failed to write to file '{0}': {1}")]
     WriteToFile(String, io::Error),
+	#[error("failed to read file '{0}': {1}")]
+	FileNotFound(PathBuf, io::Error),
+	#[error("failed to read file '{0}': {1}")]
+	DeserializeError(String, serde_json::Error),
+
 }
 
 
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct CacheJson {
+	pub contract_path: String,
+	pub sha256: String,
+}
+
 pub fn create_compiled_contract_path(path_to_contract_file: &PathBuf, root: &PathBuf) -> Result<PathBuf, Error> {
 	let cache_dir = dirs::cache_dir().ok_or(Error::CacheDirSupported)?;
-    // parent of root
     let root_parent = root.parent().ok_or(Error::CacheDirSupported)?;
 	let relative_path = path_to_contract_file.strip_prefix(root_parent).map_err(Error::StripPrefixError)?;
 	let mut path_to_compiled_contract_path = PathBuf::new();
@@ -44,4 +54,10 @@ pub fn create_compiled_contract_path(path_to_contract_file: &PathBuf, root: &Pat
 	path_to_compiled_contract_path.push(&relative_path);
 	path_to_compiled_contract_path.set_extension("json");
 	return Ok(path_to_compiled_contract_path);
+}
+
+pub fn read_json_file(path: &PathBuf) -> Result<CacheJson, Error> {
+	let file = read_to_string(path).map_err(|op| Error::FileNotFound(path.to_owned(), op))?;
+	let data = serde_json::from_str::<CacheJson>(file.as_str()).map_err(|op| Error::DeserializeError(file, op))?;
+	return Ok(data);
 }
