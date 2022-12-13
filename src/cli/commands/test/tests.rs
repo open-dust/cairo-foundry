@@ -6,6 +6,7 @@ use super::{
 	compile_and_list_entrypoints, setup_hint_processor, test_single_entrypoint, TestCommandError,
 };
 
+
 pub fn run_single_test(
 	test_name: &str,
 	test_path: &PathBuf,
