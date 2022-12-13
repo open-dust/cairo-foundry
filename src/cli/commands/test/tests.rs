@@ -60,7 +60,7 @@ fn test_read_json_positive_0() {
 
 	let expected_json = CacheJson {
 		contract_path: "test_compiled_contracts/test_valid_program.cairo".to_string(),
-		hash: "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+		hash: "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
 	};
 
 	assert_eq!(json, expected_json);
