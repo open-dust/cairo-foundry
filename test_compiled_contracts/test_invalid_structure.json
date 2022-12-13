@@ -1,0 +1,4 @@
+{
+    "contract_path": "test_compiled_contracts/test_valid_program.cairo",
+    "hasher": "0x0000000000000000000000000000000000000000000000000000000000000000" 
+}

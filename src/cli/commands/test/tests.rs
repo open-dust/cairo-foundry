@@ -56,3 +56,19 @@ fn test_read_json_positive_0() {
 
 	assert_eq!(json, expected_json);
 }
+
+fn test_read_json_negative_0() {
+	let current_dir = std::env::current_dir().unwrap();
+	let root = PathBuf::from(current_dir.join("test_compiled_contracts"));
+	let path_to_compiled_contract_path = PathBuf::from(root.join("test_inexistent.json"));
+	let json = read_json_file(&path_to_compiled_contract_path)?;
+	assert!(json.is_err());	
+}
+
+fn test_read_json_negative_1() {
+	let current_dir = std::env::current_dir().unwrap();
+	let root = PathBuf::from(current_dir.join("test_compiled_contracts"));
+	let path_to_compiled_contract_path = PathBuf::from(root.join("test_invalid_structure.json"));
+	let json = read_json_file(&path_to_compiled_contract_path)?;
+	assert!(json.is_err());	
+}
