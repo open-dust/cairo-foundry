@@ -12,7 +12,7 @@ pub mod cache {
 
 	#[derive(Error, Debug)]
 	pub enum CacheError {
-		#[error("failed to read file `{0}`")]
+		#[error("file `{0}` not found ")]
 		FileNotFound(PathBuf),
 		#[error("failed to deserialize file '{0}': {1}")]
 		DeserializeError(String, serde_json::Error),
