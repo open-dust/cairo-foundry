@@ -12,7 +12,7 @@ use super::{
 
 use core::fmt::Error;
 
-use crate::cli::commands::test::cache::cache::{read_json_file, CacheError, CacheJson};
+use crate::cli::commands::test::cache::cache::{read_cache_file, CacheError, CacheCairoFoundry};
 // use serde_json::Error;
 
 pub fn run_single_test(
@@ -50,14 +50,15 @@ fn test_cairo_hints() {
 }
 
 #[test]
-fn test_read_json_positive_0() {
+fn test_read_cache_file_positive_0() {
 	let current_dir = std::env::current_dir().unwrap();
-	let root = PathBuf::from(current_dir.join("test_compiled_contracts"));
-	let path_to_compiled_contract_path = PathBuf::from(root.join("test_valid_program.json"));
-	let json = read_json_file(&path_to_compiled_contract_path).unwrap();
+	let cache_root_dir = PathBuf::from(current_dir.join("test_cache_files"));
+	let path_to_cache = PathBuf::from(cache_root_dir.join("test_valid_program.json"));
+	let json = read_cache_file(&path_to_cache).unwrap();
 
-	let expected_json = CacheJson {
-		contract_path: "test_compiled_contracts/test_valid_program.cairo".to_string(),
+	let expected_json = CacheCairoFoundry {
+		contract_path: PathBuf::from("test_cairo_contracts/test_valid_program.cairo"),
+		compiled_contract_path: PathBuf::from("test_compiled_contracts/test_valid_program.json"),
 		hash: "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
 	};
 
@@ -65,19 +66,19 @@ fn test_read_json_positive_0() {
 }
 
 #[test]
-fn test_read_json_negative_0() {
+fn test_read_cache_file_negative_0() {
 	let current_dir = std::env::current_dir().unwrap();
-	let root = PathBuf::from(current_dir.join("test_compiled_contracts"));
-	let path_to_compiled_contract_path = PathBuf::from(root.join("test_inexistent.json"));
-	let result = read_json_file(&path_to_compiled_contract_path);
+	let cache_root_dir = PathBuf::from(current_dir.join("test_compiled_contracts"));
+	let path_to_cache = PathBuf::from(cache_root_dir.join("test_inexistent.json"));
+	let result = read_cache_file(&path_to_cache);
 	assert_matches!(result, Err(CacheError::FileNotFound(_)));
 }
 
 #[test]
-fn test_read_json_negative_1() {
+fn test_read_cache_file_negative_1() {
 	let current_dir = std::env::current_dir().unwrap();
-	let root = PathBuf::from(current_dir.join("test_compiled_contracts"));
-	let path_to_compiled_contract_path = PathBuf::from(root.join("test_invalid_structure.json"));
-	let result = read_json_file(&path_to_compiled_contract_path);
+	let cache_root_dir = PathBuf::from(current_dir.join("test_compiled_contracts"));
+	let path_to_cache = PathBuf::from(cache_root_dir.join("test_invalid_structure.json"));
+	let result = read_cache_file(&path_to_cache);
 	assert_matches!(result, Err(CacheError::DeserializeError(_, _)));
 }

@@ -20,15 +20,16 @@ pub mod cache {
 	}
 
 	#[derive(Serialize, Deserialize, Debug, PartialEq)]
-	pub struct CacheJson {
-		pub contract_path: String,
+	pub struct CacheCairoFoundry {
+		pub contract_path: PathBuf,
+		pub compiled_contract_path: PathBuf,
 		pub hash: String,
 	}
 
-	pub fn read_json_file(path: &PathBuf) -> Result<CacheJson, CacheError> {
+	pub fn read_cache_file(path: &PathBuf) -> Result<CacheCairoFoundry, CacheError> {
 		let file =
 			read_to_string(path).map_err(|_op_| CacheError::FileNotFound(path.to_owned()))?;
-		let data = serde_json::from_str::<CacheJson>(file.as_str())
+		let data = serde_json::from_str::<CacheCairoFoundry>(file.as_str())
 			.map_err(|op| CacheError::DeserializeError(file, op))?;
 		return Ok(data)
 	}
