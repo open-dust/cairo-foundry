@@ -12,7 +12,7 @@ use super::{
 
 use core::fmt::Error;
 
-use crate::cli::commands::test::cache::cache::{read_cache_file, CacheError, CacheCairoFoundry};
+use crate::cli::commands::test::cache::cache::{read_cache_file, CacheCairoFoundry, CacheError};
 // use serde_json::Error;
 
 pub fn run_single_test(
@@ -52,7 +52,8 @@ fn test_cairo_hints() {
 #[test]
 fn test_read_cache_file_positive_0() {
 	let current_dir = std::env::current_dir().unwrap();
-	let path_to_cache = PathBuf::from(current_dir.join("test_cache_files").join("test_valid_program.json"));
+	let path_to_cache =
+		PathBuf::from(current_dir.join("test_cache_files").join("test_valid_program.json"));
 	let json = read_cache_file(&path_to_cache).unwrap();
 
 	let expected_json = CacheCairoFoundry {
@@ -67,7 +68,8 @@ fn test_read_cache_file_positive_0() {
 #[test]
 fn test_read_cache_file_negative_0() {
 	let current_dir = std::env::current_dir().unwrap();
-	let path_to_cache = PathBuf::from(current_dir.join("test_cache_files").join("test_inexistent.json"));
+	let path_to_cache =
+		PathBuf::from(current_dir.join("test_cache_files").join("test_inexistent.json"));
 	let result = read_cache_file(&path_to_cache);
 	assert_matches!(result, Err(CacheError::FileNotFound(_)));
 }
@@ -75,7 +77,8 @@ fn test_read_cache_file_negative_0() {
 #[test]
 fn test_read_cache_file_negative_1() {
 	let current_dir = std::env::current_dir().unwrap();
-	let path_to_cache = PathBuf::from(current_dir.join("test_cache_files").join("test_invalid_structure.json"));
+	let path_to_cache =
+		PathBuf::from(current_dir.join("test_cache_files").join("test_invalid_structure.json"));
 	let result = read_cache_file(&path_to_cache);
 	assert_matches!(result, Err(CacheError::DeserializeError(_, _)));
 }
