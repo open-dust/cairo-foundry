@@ -2,7 +2,6 @@ pub mod cache {
 	use std::{
 		fmt::Debug,
 		fs::read_to_string,
-		io::{self},
 		path::PathBuf,
 	};
 
@@ -15,7 +14,7 @@ pub mod cache {
 	pub enum CacheError {
 		#[error("failed to read file `{0}`")]
 		FileNotFound(PathBuf),
-		#[error("failed to read file '{0}': {1}")]
+		#[error("failed to deserialize file '{0}': {1}")]
 		DeserializeError(String, serde_json::Error),
 	}
 
