@@ -68,7 +68,7 @@ fn test_read_cache_file_positive_0() {
 #[test]
 fn test_read_cache_file_negative_0() {
 	let current_dir = std::env::current_dir().unwrap();
-	let cache_root_dir = PathBuf::from(current_dir.join("test_compiled_contracts"));
+	let cache_root_dir = PathBuf::from(current_dir.join("test_cache_files"));
 	let path_to_cache = PathBuf::from(cache_root_dir.join("test_inexistent.json"));
 	let result = read_cache_file(&path_to_cache);
 	assert_matches!(result, Err(CacheError::FileNotFound(_)));
@@ -77,7 +77,7 @@ fn test_read_cache_file_negative_0() {
 #[test]
 fn test_read_cache_file_negative_1() {
 	let current_dir = std::env::current_dir().unwrap();
-	let cache_root_dir = PathBuf::from(current_dir.join("test_compiled_contracts"));
+	let cache_root_dir = PathBuf::from(current_dir.join("test_cache_files"));
 	let path_to_cache = PathBuf::from(cache_root_dir.join("test_invalid_structure.json"));
 	let result = read_cache_file(&path_to_cache);
 	assert_matches!(result, Err(CacheError::DeserializeError(_, _)));
