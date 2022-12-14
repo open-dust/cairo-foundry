@@ -1,12 +1,10 @@
 use crate::cli::commands::{test::TestArgs, CommandExecution};
+use assert_matches::assert_matches;
 use cairo_rs::serde::deserialize_program::deserialize_program_json;
 use std::path::PathBuf;
-use assert_matches::assert_matches;
-
 
 // import io::Error;
-use std::{io::{self}};
-
+use std::io::{self};
 
 use super::{
 	compile_and_list_entrypoints, setup_hint_processor, test_single_entrypoint, TestCommandError,
@@ -16,8 +14,6 @@ use core::fmt::Error;
 
 use crate::cli::commands::test::cache::cache::{read_json_file, CacheError, CacheJson};
 // use serde_json::Error;
-
-
 
 pub fn run_single_test(
 	test_name: &str,

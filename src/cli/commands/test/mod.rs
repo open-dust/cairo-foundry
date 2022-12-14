@@ -1,6 +1,6 @@
+pub mod cache;
 #[cfg(test)]
 pub mod tests;
-pub mod cache;
 
 use crate::hints::{self, EXPECT_REVERT_FLAG};
 use regex::Regex;
