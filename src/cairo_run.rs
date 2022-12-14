@@ -20,14 +20,15 @@ use crate::{
 };
 
 /// Execute a cairo program
-/// 
+///
 /// A `CairoRunner` and a `VirtualMachine` will be created to execute the given `Program`.
 /// Hint and `Hooks` (if any) will be applied by the `VirtualMachine`
-/// 
-/// When no error is encoutered, returns the `CairoRunner` and `VirtualMachine`.
+///
+/// When no error is encountered, returns the `CairoRunner` and `VirtualMachine`.
 /// Otherwise, returns a `CairoRunError`
-/// 
-/// This function is called by `test_single_entrypoint`
+///
+/// `cairo_run` is the last step after cairo files have been listed and compiled.
+/// Each *test* functions will be executed by `cairo_run` with hooks and hints applied.
 pub fn cairo_run(
 	program: Program,
 	hint_processor: &dyn HintProcessor,
