@@ -48,15 +48,15 @@ fn test_read_cache_file_positive_0() {
 	let current_dir = std::env::current_dir().unwrap();
 	let path_to_cache =
 		PathBuf::from(current_dir.join("test_cache_files").join("test_valid_program.json"));
-	let json = read_cache_file(&path_to_cache).unwrap();
+	let cache = read_cache_file(&path_to_cache).unwrap();
 
-	let expected_json = CacheCairoFoundry {
+	let expected = CacheCairoFoundry {
 		contract_path: PathBuf::from("test_cairo_contracts/test_valid_program.cairo"),
 		compiled_contract_path: PathBuf::from("test_compiled_contracts/test_valid_program.json"),
 		hash: "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
 	};
 
-	assert_eq!(json, expected_json);
+	assert_eq!(cache, expected);
 }
 
 #[test]
