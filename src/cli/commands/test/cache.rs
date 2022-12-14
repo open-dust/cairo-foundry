@@ -1,9 +1,5 @@
 pub mod cache {
-	use std::{
-		fmt::Debug,
-		fs::read_to_string,
-		path::PathBuf,
-	};
+	use std::{fmt::Debug, fs::read_to_string, path::PathBuf};
 
 	use thiserror::Error;
 
