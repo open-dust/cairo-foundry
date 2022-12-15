@@ -65,7 +65,7 @@ fn test_read_cache_file_negative_0() {
 	let path_to_cache =
 		PathBuf::from(current_dir.join("test_cache_files").join("test_inexistent.json"));
 	let result = read_cache_file(&path_to_cache);
-	assert_matches!(result, Err(CacheError::FileNotFound(_)));
+	assert_matches!(result, Err(CacheError::FileNotFoundError(_)));
 }
 
 #[test]
