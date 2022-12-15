@@ -1,5 +1,5 @@
 {
     "contract_path": "test_cairo_contracts/test_valid_program.cairo",
     "compiled_contract_path": "test_compiled_contracts/test_valid_program.json",
-    "hasher": "0x0000000000000000000000000000000000000000000000000000000000000000" 
+    "invalid_field": "field_should_be_`hash`_instead" 
 }
