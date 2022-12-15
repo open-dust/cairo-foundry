@@ -7,7 +7,7 @@ use super::{
 	compile_and_list_entrypoints, setup_hint_processor, test_single_entrypoint, TestCommandError,
 };
 
-use crate::cli::commands::test::cache::cache::{read_cache_file, CacheCairoFoundry, CacheError};
+use crate::cli::commands::test::cache::cache::{read_cache_file, Cache, CacheError};
 
 pub fn run_single_test(
 	test_name: &str,
@@ -50,7 +50,7 @@ fn test_read_cache_file_positive_0() {
 		PathBuf::from(current_dir.join("test_cache_files").join("test_valid_program.json"));
 	let cache = read_cache_file(&path_to_cache).unwrap();
 
-	let expected = CacheCairoFoundry {
+	let expected = Cache {
 		contract_path: PathBuf::from("test_cairo_contracts/test_valid_program.cairo"),
 		compiled_contract_path: PathBuf::from("test_compiled_contracts/test_valid_program.json"),
 		hash: "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
