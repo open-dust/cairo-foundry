@@ -44,7 +44,7 @@ fn test_cairo_hints() {
 }
 
 #[test]
-fn test_read_cache_file_positive_0() {
+fn read_cache_with_valid_input() {
 	let current_dir = std::env::current_dir().unwrap();
 	let path_to_cache =
 		PathBuf::from(current_dir.join("test_cache_files").join("test_valid_program.json"));
@@ -60,16 +60,16 @@ fn test_read_cache_file_positive_0() {
 }
 
 #[test]
-fn test_read_cache_file_negative_0() {
+fn read_non_existing_cache_file() {
 	let current_dir = std::env::current_dir().unwrap();
 	let path_to_cache =
-		PathBuf::from(current_dir.join("test_cache_files").join("test_inexistent.json"));
+		PathBuf::from(current_dir.join("test_cache_files").join("non_existing_cache.json"));
 	let result = read_cache_file(&path_to_cache);
 	assert_matches!(result, Err(CacheError::FileNotFoundError(_)));
 }
 
 #[test]
-fn test_read_cache_file_negative_1() {
+fn read_existing_cache_with_incorrect_field() {
 	let current_dir = std::env::current_dir().unwrap();
 	let path_to_cache =
 		PathBuf::from(current_dir.join("test_cache_files").join("test_invalid_structure.json"));
