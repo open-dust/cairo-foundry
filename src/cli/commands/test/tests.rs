@@ -74,5 +74,5 @@ fn test_read_cache_file_negative_1() {
 	let path_to_cache =
 		PathBuf::from(current_dir.join("test_cache_files").join("test_invalid_structure.json"));
 	let result = read_cache_file(&path_to_cache);
-	assert_matches!(result, Err(CacheError::DeserializeError(_, _)));
+	assert_matches!(result, Err(CacheError::DeserializeError(_)));
 }

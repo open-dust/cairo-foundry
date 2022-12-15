@@ -1,5 +1,5 @@
 pub mod cache {
-	use std::{fmt::Debug, fs::read_to_string, path::PathBuf};
+	use std::{io, fmt::Debug, fs::read_to_string, path::PathBuf};
 
 	use thiserror::Error;
 
@@ -8,10 +8,10 @@ pub mod cache {
 
 	#[derive(Error, Debug)]
 	pub enum CacheError {
-		#[error("file `{0}` not found ")]
-		FileNotFound(PathBuf),
-		#[error("failed to deserialize file '{0}': {1}")]
-		DeserializeError(String, serde_json::Error),
+		#[error("file not found ")]
+		FileNotFound(#[from] io::Error),
+		#[error("failed to deserialize file '{0}'")]
+		DeserializeError(#[from]serde_json::Error),
 	}
 
 	#[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -23,9 +23,8 @@ pub mod cache {
 
 	pub fn read_cache_file(path: &PathBuf) -> Result<Cache, CacheError> {
 		let file =
-			read_to_string(path).map_err(|_op_| CacheError::FileNotFound(path.to_owned()))?;
-		let data = serde_json::from_str::<Cache>(file.as_str())
-			.map_err(|op| CacheError::DeserializeError(file, op))?;
+			read_to_string(path)?;
+		let data = serde_json::from_str::<Cache>(file.as_str())?;
 		return Ok(data)
 	}
 }
