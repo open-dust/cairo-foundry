@@ -81,7 +81,7 @@ fn read_existing_cache_with_incorrect_field() {
 }
 
 #[test]
-fn get_cache_path_valid_contract_path_in_test_cairo_contracts_dir() {
+fn get_cache_path_for_valid_contract_path_in_test_cairo_contracts_dir() {
 	let current_dir = std::env::current_dir().unwrap();
 	let path_to_contract =
 		PathBuf::from(current_dir.join("test_cairo_contracts").join("test_valid_program.cairo"));
@@ -95,7 +95,7 @@ fn get_cache_path_valid_contract_path_in_test_cairo_contracts_dir() {
 }
 
 #[test]
-fn get_cache_path_valid_contract_path_in_project_root_dir() {
+fn get_cache_path_for_valid_contract_path_in_project_root_dir() {
 	let path_to_contract = PathBuf::from("test_valid_program.cairo");
 	let path_to_cache = get_cache_path(&path_to_contract).unwrap();
 
