@@ -1,6 +1,6 @@
 pub mod cache {
 	use dirs;
-	use std::{fmt::Debug, fs::read_to_string, io, path::PathBuf};
+	use std::{ffi::OsStr, fmt::Debug, fs::read_to_string, io, path::PathBuf};
 
 	use thiserror::Error;
 
@@ -19,8 +19,8 @@ pub mod cache {
 		CacheDirNotSupportedError,
 		#[error("filename does not exist")]
 		FileNameDoesNotExistError,
-		#[error("extension is not a valid cairo contract")]
-		InvalidContractExtension,
+		#[error("file is not a valid cairo contract: {0}")]
+		InvalidContractExtension(String),
 	}
 
 	#[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -32,10 +32,15 @@ pub mod cache {
 
 	pub fn get_cache_path(contract_path: &PathBuf) -> Result<PathBuf, CacheError> {
 		// check if contract_path have .cairo extension
-		let extension = contract_path.extension().ok_or(CacheError::InvalidContractExtension)?;
+		let extension = contract_path
+			.extension()
+			.ok_or(CacheError::InvalidContractExtension(format!(" ")))?;
 		// assert extension to be cairo
 		if extension != "cairo" {
-			return Err(CacheError::InvalidContractExtension)
+			// convert osStr to string
+			return Err(CacheError::InvalidContractExtension(
+				extension.to_str().to_owned().unwrap().to_string(),
+			))
 		}
 		assert_eq!(extension, "cairo");
 		let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
