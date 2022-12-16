@@ -1,3 +1,4 @@
+pub mod cache;
 #[cfg(test)]
 pub mod tests;
 

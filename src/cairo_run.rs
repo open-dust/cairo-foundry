@@ -19,10 +19,20 @@ use crate::{
 	hooks::HOOKS_VAR_NAME,
 };
 
+/// Execute a cairo program
+///
+/// A `CairoRunner` and a `VirtualMachine` will be created to execute the given `Program`.
+/// Hint and `Hooks` (if any) will be applied by the `VirtualMachine`
+///
+/// When no error is encountered, returns the `CairoRunner` and `VirtualMachine`.
+/// Otherwise, returns a `CairoRunError`
+///
+/// `cairo_run` is the last step after cairo files have been listed and compiled.
+/// Each *test* functions will be executed by `cairo_run` with hooks and hints applied.
 pub fn cairo_run(
 	program: Program,
 	hint_processor: &dyn HintProcessor,
-	execution_uudi: Uuid,
+	execution_uuid: Uuid,
 	opt_hooks: Option<Hooks>,
 ) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
 	let mut cairo_runner = CairoRunner::new(&program)?;
@@ -31,7 +41,7 @@ pub fn cairo_run(
 
 	cairo_runner
 		.exec_scopes
-		.insert_value(EXECUTION_UUID_VAR_NAME, bigint!(execution_uudi.as_u128()));
+		.insert_value(EXECUTION_UUID_VAR_NAME, bigint!(execution_uuid.as_u128()));
 	if let Some(hooks) = opt_hooks {
 		cairo_runner.exec_scopes.insert_value(HOOKS_VAR_NAME, hooks);
 	}
