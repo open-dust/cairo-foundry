@@ -1,13 +1,14 @@
 pub mod cache {
 	use dirs;
-	use std::{ffi::OsStr, fmt::Debug, fs::read_to_string, io, path::PathBuf};
+	use std::{fmt::Debug, fs::read_to_string, io, path::PathBuf};
 
 	use thiserror::Error;
 
 	use serde::{Deserialize, Serialize};
 	use serde_json;
 
-	use crate::compile::Error;
+	const CAIRO_FOUNDRY_CACHE_DIR: &str = "cairo-foundry-cache";
+	const CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR: &str = "compiled-cairo-files";
 
 	#[derive(Error, Debug)]
 	pub enum CacheError {
@@ -48,7 +49,7 @@ pub mod cache {
 			contract_path.file_stem().ok_or(CacheError::FileNameDoesNotExistError)?;
 
 		let mut cache_path =
-			PathBuf::from(cache_dir.join("cairo-foundry-cache").join(contract_name));
+			PathBuf::from(cache_dir.join(CAIRO_FOUNDRY_CACHE_DIR).join(contract_name));
 		cache_path.set_extension("json");
 		return Ok(cache_path)
 	}
@@ -58,7 +59,7 @@ pub mod cache {
 		let contract_name =
 			contract_path.file_stem().ok_or(CacheError::FileNameDoesNotExistError)?;
 		let mut compiled_contract_path =
-			PathBuf::from(cache_dir.join("compiled-cairo-files").join(contract_name));
+			PathBuf::from(cache_dir.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR).join(contract_name));
 		compiled_contract_path.set_extension("json");
 		return Ok(compiled_contract_path)
 	}
