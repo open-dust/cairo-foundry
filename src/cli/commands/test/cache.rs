@@ -19,8 +19,8 @@ pub mod cache {
 		CacheDirNotSupportedError,
 		#[error("filename does not exist")]
 		FileNameDoesNotExistError,
-		#[error("file extension does not exist")]
-		ExtensionDoesNotExistError,
+		#[error("extension is not a valid cairo contract")]
+		InvalidContractExtension,
 	}
 
 	#[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -32,10 +32,10 @@ pub mod cache {
 
 	pub fn get_cache_path(contract_path: &PathBuf) -> Result<PathBuf, CacheError> {
 		// check if contract_path have .cairo extension
-		let extension = contract_path.extension().ok_or(CacheError::ExtensionDoesNotExistError)?;
+		let extension = contract_path.extension().ok_or(CacheError::InvalidContractExtension)?;
 		// assert extension to be cairo
 		if extension != "cairo" {
-			return Err(CacheError::ExtensionDoesNotExistError)
+			return Err(CacheError::InvalidContractExtension)
 		}
 		assert_eq!(extension, "cairo");
 		let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
