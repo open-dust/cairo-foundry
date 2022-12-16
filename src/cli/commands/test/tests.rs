@@ -1,13 +1,16 @@
 use crate::cli::commands::{test::TestArgs, CommandExecution};
 use assert_matches::assert_matches;
 use cairo_rs::serde::deserialize_program::deserialize_program_json;
+use serde::de::Expected;
 use std::path::PathBuf;
 
 use super::{
 	compile_and_list_entrypoints, setup_hint_processor, test_single_entrypoint, TestCommandError,
 };
 
-use crate::cli::commands::test::cache::cache::{read_cache_file, Cache, CacheError};
+use crate::cli::commands::test::cache::cache::{
+	get_cache_path, read_cache_file, Cache, CacheError,
+};
 
 pub fn run_single_test(
 	test_name: &str,
@@ -75,4 +78,30 @@ fn read_existing_cache_with_incorrect_field() {
 		PathBuf::from(current_dir.join("test_cache_files").join("test_invalid_structure.json"));
 	let result = read_cache_file(&path_to_cache);
 	assert_matches!(result, Err(CacheError::DeserializeError(_)));
+}
+
+#[test]
+fn get_cache_path_valid_contract_path_in_test_cairo_contracts_dir() {
+	let current_dir = std::env::current_dir().unwrap();
+	let path_to_contract =
+		PathBuf::from(current_dir.join("test_cairo_contracts").join("test_valid_program.cairo"));
+	let path_to_cache = get_cache_path(&path_to_contract).unwrap();
+
+	let cache_dir = dirs::cache_dir().unwrap();
+	let expected =
+		PathBuf::from(cache_dir.join("cairo-foundry-cache").join("test_valid_program.json"));
+
+	assert_eq!(path_to_cache, expected);
+}
+
+#[test]
+fn get_cache_path_valid_contract_path_in_project_root_dir() {
+	let path_to_contract = PathBuf::from("test_valid_program.cairo");
+	let path_to_cache = get_cache_path(&path_to_contract).unwrap();
+
+	let cache_dir = dirs::cache_dir().unwrap();
+	let expected =
+		PathBuf::from(cache_dir.join("cairo-foundry-cache").join("test_valid_program.json"));
+
+	assert_eq!(path_to_cache, expected);
 }
