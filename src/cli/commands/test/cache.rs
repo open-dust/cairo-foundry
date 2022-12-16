@@ -7,6 +7,8 @@ pub mod cache {
 	use serde::{Deserialize, Serialize};
 	use serde_json;
 
+use crate::compile::Error;
+
 	#[derive(Error, Debug)]
 	pub enum CacheError {
 		#[error(transparent)]
@@ -27,29 +29,23 @@ pub mod cache {
 		pub hash: String,
 	}
 
-	struct CairoContract {
-		pub contract_path: PathBuf
-	}
 
-	impl CairoContract {
-		fn new(contract_path: PathBuf) -> Self {
-			// extract contract name from contract_path
-			CairoContract { contract_path: contract_path }
-		}
-
-		fn get_cache_path(&self) -> Result<PathBuf, CacheError> {
-			let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
-			let contract_name = self.contract_path.file_stem().ok_or(CacheError::FileNameDoesNotExistError)?;
-			
-			let path_to_cache =
-			PathBuf::from(cache_dir.join("cairo-foundry-cache").join(contract_name));
-			return Ok(path_to_cache);
-		}
-
+	fn get_cache_path(contract_path: &PathBuf) -> Result<PathBuf, CacheError> {
+		let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
+		let contract_name = contract_path.file_stem().ok_or(CacheError::FileNameDoesNotExistError)?;
 		
+		let cache_path =
+		PathBuf::from(cache_dir.join("cairo-foundry-cache").join(contract_name));
+		return Ok(cache_path);
 	}
 
-
+	fn get_compiled_contract_path(contract_path: &PathBuf) -> Result<PathBuf, CacheError> {
+		let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
+		let contract_name = contract_path.file_stem().ok_or(CacheError::FileNameDoesNotExistError)?;
+		let mut compiled_contract_path = PathBuf::from(cache_dir.join("compiled-cairo-files").join(contract_name));
+		compiled_contract_path.set_extension("json");
+		return Ok(compiled_contract_path);
+	}
 
 
 	pub fn read_cache_file(path: &PathBuf) -> Result<Cache, CacheError> {
@@ -58,7 +54,6 @@ pub mod cache {
 		return Ok(data)
 	}
 
-	// create class
 
 
 	
