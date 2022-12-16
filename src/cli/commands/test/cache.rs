@@ -43,7 +43,6 @@ pub mod cache {
 				extension.to_str().to_owned().unwrap().to_string(),
 			))
 		}
-		assert_eq!(extension, "cairo");
 		let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
 		let contract_name =
 			contract_path.file_stem().ok_or(CacheError::FileNameDoesNotExistError)?;
