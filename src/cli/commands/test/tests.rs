@@ -1,12 +1,21 @@
 use crate::cli::commands::{test::TestArgs, CommandExecution};
+use cairo_rs::serde::deserialize_program::deserialize_program_json;
 use std::path::PathBuf;
 
-use super::{compile_and_list_entrypoints, setup_hint_processor, test_single_entrypoint};
+use super::{
+	compile_and_list_entrypoints, setup_hint_processor, test_single_entrypoint, TestCommandError,
+};
 
-pub fn run_single_test(test_name: &str, test_path: &PathBuf) -> (String, bool) {
-	let (_, path_to_compiled, _) = compile_and_list_entrypoints(test_path.to_owned()).unwrap();
+pub fn run_single_test(
+	test_name: &str,
+	test_path: &PathBuf,
+) -> Result<(String, bool), TestCommandError> {
+	let (_, path_to_compiled, _) = compile_and_list_entrypoints(test_path.to_owned())?;
+
+	let program_json = deserialize_program_json(&path_to_compiled)?;
+
 	test_single_entrypoint(
-		&path_to_compiled,
+		program_json,
 		test_name.to_string(),
 		&setup_hint_processor(),
 		None,

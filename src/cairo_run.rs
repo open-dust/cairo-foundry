@@ -1,8 +1,7 @@
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
 
 use cairo_rs::{
 	bigint,
-	cairo_run::write_output,
 	hint_processor::hint_processor_definition::HintProcessor,
 	types::program::Program,
 	vm::{
@@ -20,22 +19,14 @@ use crate::{
 	hooks::HOOKS_VAR_NAME,
 };
 
-pub fn cairo_run<'a>(
-	path: &'a Path,
-	entrypoint: &'a str,
-	trace_enabled: bool,
-	print_output: bool,
-	hint_processor: &'a dyn HintProcessor,
+pub fn cairo_run(
+	program: Program,
+	hint_processor: &dyn HintProcessor,
 	execution_uudi: Uuid,
 	opt_hooks: Option<Hooks>,
 ) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
-	let program = match Program::new(path, entrypoint) {
-		Ok(program) => program,
-		Err(error) => return Err(CairoRunError::Program(error)),
-	};
-
 	let mut cairo_runner = CairoRunner::new(&program)?;
-	let mut vm = VirtualMachine::new(program.prime, trace_enabled);
+	let mut vm = VirtualMachine::new(program.prime, false);
 	let end = cairo_runner.initialize(&mut vm)?;
 
 	cairo_runner
@@ -64,10 +55,6 @@ pub fn cairo_run<'a>(
 	vm.verify_auto_deductions().map_err(CairoRunError::VirtualMachine)?;
 
 	cairo_runner.relocate(&mut vm).map_err(CairoRunError::Trace)?;
-
-	if print_output {
-		write_output(&mut cairo_runner, &mut vm)?;
-	}
 
 	Ok((cairo_runner, vm))
 }

@@ -8,6 +8,7 @@ use lazy_static::lazy_static;
 use log::info;
 use regex::Regex;
 use serde::Serialize;
+use thiserror::Error;
 use walkdir::WalkDir;
 
 use super::CommandExecution;
@@ -20,10 +21,16 @@ pub struct ListArgs {
 	pub root: PathBuf,
 }
 
+#[derive(Error, Debug)]
+pub enum ListCommandError {
+	#[error(transparent)]
+	ListFilesError(#[from] walkdir::Error),
+}
+
 /// Function used to validate directory type of the specified Path
-/// `path: &str` the path to test
+/// `path: &str` the Path to test
 /// Returns the `PathBuf` for the given path
-/// or Err, which means that path does not exist or is not a dir.
+/// or an Err with the Path if it does not exist or if it is not a directory.
 pub fn path_is_valid_directory(path: &str) -> Result<PathBuf, String> {
 	let path = PathBuf::from(path);
 	if path.exists() && path.is_dir() {
@@ -54,25 +61,25 @@ impl fmt::Display for ListOutput {
 	}
 }
 
-impl CommandExecution<ListOutput> for ListArgs {
+impl CommandExecution<ListOutput, ListCommandError> for ListArgs {
 	/// Implementation of CommandExecution Trait for the List Command
 	///
 	/// The List Command lists and returns the 'ListOutput' of all the valid
 	/// Cairo tests files within the ListArgs root directory(PathBuf).
 	/// To be valid, the filepath must follow the following regex:
-	/// 		"^test_.*\.cairo$"
+	///    "^test_.*\.cairo$"
 	///
-	/// # Examples
-	/// 	test_cairo_contracts/test_invalid_program.cairo => VALID
-	/// 	test_hints/test/minor/failing.cairo => VALID
-	/// 	test_cairo_hints/test_mock_call.cairo.test => INVALID, ends with "test" not ".cairo"
-	/// 	mytest_hints/test_skip.cairo => INVALID, starts with "mytests" not "test_"
+	/// Examples
+	///    test_cairo_contracts/test_invalid_program.cairo > Valid
+	///    test_hints/test/minor/failing.cairo > Valid
+	///    test_cairo_hints/test_mock_call.cairo.test > Invalid, ends with "test" not ".cairo"
+	///    mytest_hints/test_skip.cairo > Invalid, starts with "mytests" not "test_"
 	///
 	/// When using the cairo-compile command, the root directory is the one specified by the option "--root"
 	///
-	/// Returns a `ListOutput` struct with all valid tests files in the `.files: vector<PathBuf>` or an error `Err<String>`
-	/// which is the first Error encoutered during the processing of the root directory.
-	fn exec(&self) -> Result<ListOutput, String> {
+	/// Returns a `ListOutput` struct with all valid tests files in the `.files: vector<PathBuf>`
+	/// or an error `ListCommandError`, the first Error encoutered during the processing of the root directory.
+	fn exec(&self) -> Result<ListOutput, ListCommandError> {
 		info!("Listing files within directory {:?}", self.root);
 
 		lazy_static! {
@@ -91,10 +98,9 @@ impl CommandExecution<ListOutput> for ListArgs {
 						None
 					}
 				},
-				Err(err) => Some(Err(err)),
+				Err(err) => Some(Err(ListCommandError::ListFilesError(err))),
 			})
-			.collect::<Result<Vec<_>, _>>()
-			.map_err(|err| err.to_string())?;
+			.collect::<Result<Vec<_>, ListCommandError>>()?;
 		test_files.sort();
 
 		Ok(ListOutput { files: test_files })
