@@ -31,7 +31,7 @@ pub mod cache {
 		pub hash: String,
 	}
 
-	pub fn get_cache_path(contract_path: &PathBuf) -> Result<PathBuf, CacheError> {
+	fn check_valid_cairo_contract(contract_path: &PathBuf) -> Result<(), CacheError> {
 		// check if contract_path have .cairo extension
 		let extension = contract_path
 			.extension()
@@ -43,6 +43,12 @@ pub mod cache {
 				extension.to_str().to_owned().unwrap().to_string(),
 			))
 		}
+		Ok(())
+	}
+
+	pub fn get_cache_path(contract_path: &PathBuf) -> Result<PathBuf, CacheError> {
+		// check if contract_path have .cairo extension
+		check_valid_cairo_contract(contract_path)?;
 		let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
 		let contract_name =
 			contract_path.file_stem().ok_or(CacheError::FileNameDoesNotExistError)?;
@@ -54,6 +60,7 @@ pub mod cache {
 	}
 
 	fn get_compiled_contract_path(contract_path: &PathBuf) -> Result<PathBuf, CacheError> {
+		check_valid_cairo_contract(contract_path)?;
 		let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
 		let contract_name =
 			contract_path.file_stem().ok_or(CacheError::FileNameDoesNotExistError)?;
