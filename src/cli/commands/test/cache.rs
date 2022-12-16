@@ -8,9 +8,9 @@ pub mod cache {
 
 	#[derive(Error, Debug)]
 	pub enum CacheError {
-		#[error("file not found: '{0}'")]
+		#[error(transparent)]
 		FileNotFoundError(#[from] io::Error),
-		#[error("failed to deserialize file: '{0}'")]
+		#[error(transparent)]
 		DeserializeError(#[from] serde_json::Error),
 	}
 
