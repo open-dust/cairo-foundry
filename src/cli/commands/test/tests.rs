@@ -81,7 +81,8 @@ fn read_existing_cache_with_incorrect_field() {
 }
 
 #[test]
-fn get_cache_path_for_valid_contract_path_in_test_cairo_contracts_dir() {
+fn get_cache_path_for_valid_contract_path() {
+	// in test_cairo_contracts dir
 	let current_dir = std::env::current_dir().unwrap();
 	let path_to_contract =
 		PathBuf::from(current_dir.join("test_cairo_contracts").join("test_valid_program.cairo"));
@@ -90,19 +91,15 @@ fn get_cache_path_for_valid_contract_path_in_test_cairo_contracts_dir() {
 	let cache_dir = dirs::cache_dir().unwrap();
 	let expected =
 		PathBuf::from(cache_dir.join("cairo-foundry-cache").join("test_valid_program.json"));
-
 	assert_eq!(path_to_cache, expected);
-}
 
-#[test]
-fn get_cache_path_for_valid_contract_path_in_project_root_dir() {
+	// in project root dir
 	let path_to_contract = PathBuf::from("test_valid_program.cairo");
 	let path_to_cache = get_cache_path(&path_to_contract).unwrap();
 
 	let cache_dir = dirs::cache_dir().unwrap();
 	let expected =
 		PathBuf::from(cache_dir.join("cairo-foundry-cache").join("test_valid_program.json"));
-
 	assert_eq!(path_to_cache, expected);
 }
 
