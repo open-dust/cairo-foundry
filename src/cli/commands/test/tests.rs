@@ -49,9 +49,9 @@ fn test_cairo_hints() {
 #[test]
 fn read_cache_with_valid_input() {
 	let current_dir = std::env::current_dir().unwrap();
-	let path_to_cache =
+	let cache_path =
 		PathBuf::from(current_dir.join("test_cache_files").join("test_valid_program.json"));
-	let cache = read_cache_file(&path_to_cache).unwrap();
+	let cache = read_cache_file(&cache_path).unwrap();
 
 	let expected = Cache {
 		contract_path: PathBuf::from("test_cairo_contracts/test_valid_program.cairo"),
@@ -65,18 +65,18 @@ fn read_cache_with_valid_input() {
 #[test]
 fn read_non_existing_cache_file() {
 	let current_dir = std::env::current_dir().unwrap();
-	let path_to_cache =
+	let cache_path =
 		PathBuf::from(current_dir.join("test_cache_files").join("non_existing_cache.json"));
-	let result = read_cache_file(&path_to_cache);
+	let result = read_cache_file(&cache_path);
 	assert_matches!(result, Err(CacheError::FileNotFoundError(_)));
 }
 
 #[test]
 fn read_existing_cache_with_incorrect_field() {
 	let current_dir = std::env::current_dir().unwrap();
-	let path_to_cache =
+	let cache_path =
 		PathBuf::from(current_dir.join("test_cache_files").join("test_invalid_structure.json"));
-	let result = read_cache_file(&path_to_cache);
+	let result = read_cache_file(&cache_path);
 	assert_matches!(result, Err(CacheError::DeserializeError(_)));
 }
 
@@ -84,39 +84,56 @@ fn read_existing_cache_with_incorrect_field() {
 fn get_cache_path_for_valid_contract_path() {
 	// in test_cairo_contracts dir
 	let current_dir = std::env::current_dir().unwrap();
-	let path_to_contract =
-		PathBuf::from(current_dir.join("test_cairo_contracts").join("test_valid_program.cairo"));
-	let path_to_cache = get_cache_path(&path_to_contract).unwrap();
+	let contract_path = PathBuf::from(
+		current_dir
+			.join("test_cairo_contracts")
+			.join("test_valid_program_in_cairo_contracts_dir.cairo"),
+	);
+	let cache_path = get_cache_path(&contract_path).unwrap();
 
 	let cache_dir = dirs::cache_dir().unwrap();
-	let expected =
-		PathBuf::from(cache_dir.join("cairo-foundry-cache").join("test_valid_program.json"));
-	assert_eq!(path_to_cache, expected);
+	let expected = PathBuf::from(
+		cache_dir
+			.join("cairo-foundry-cache")
+			.join("test_valid_program_in_cairo_contracts_dir.json"),
+	);
+	assert_eq!(cache_path, expected);
 
 	// in project root dir
-	let path_to_contract = PathBuf::from("test_valid_program.cairo");
-	let path_to_cache = get_cache_path(&path_to_contract).unwrap();
+	let contract_path = PathBuf::from("test_valid_program_in_project_root_dir.cairo");
+	let cache_path = get_cache_path(&contract_path).unwrap();
 
 	let cache_dir = dirs::cache_dir().unwrap();
-	let expected =
-		PathBuf::from(cache_dir.join("cairo-foundry-cache").join("test_valid_program.json"));
-	assert_eq!(path_to_cache, expected);
+	let expected = PathBuf::from(
+		cache_dir
+			.join("cairo-foundry-cache")
+			.join("test_valid_program_in_project_root_dir.json"),
+	);
+	assert_eq!(cache_path, expected);
+
+	// in arbitrary path
+	let contract_path = PathBuf::from("arbitrary_dir/test_valid_program_in_arbitrary_path.cairo");
+	let cache_path = get_cache_path(&contract_path).unwrap();
+	let expected = PathBuf::from(
+		cache_dir.join("cairo-foundry-cache/test_valid_program_in_arbitrary_path.json"),
+	);
+	assert_eq!(cache_path, expected)
 }
 
 #[test]
 fn get_cache_path_for_invalid_contract_extension() {
 	// incorrect extension sol
-	let path_to_contract = PathBuf::from("test_invalid_extension.sol");
-	let path_to_cache = get_cache_path(&path_to_contract);
-	assert_matches!(path_to_cache, Err(CacheError::InvalidContractExtension(_)));
+	let contract_path = PathBuf::from("test_invalid_extension.sol");
+	let cache_path = get_cache_path(&contract_path);
+	assert_matches!(cache_path, Err(CacheError::InvalidContractExtension(_)));
 
 	// incorrect extension rs
-	let path_to_contract = PathBuf::from("test_invalid_extension.rs");
-	let path_to_cache = get_cache_path(&path_to_contract);
-	assert_matches!(path_to_cache, Err(CacheError::InvalidContractExtension(_)));
+	let contract_path = PathBuf::from("test_invalid_extension.rs");
+	let cache_path = get_cache_path(&contract_path);
+	assert_matches!(cache_path, Err(CacheError::InvalidContractExtension(_)));
 
 	// no extension
-	let path_to_contract = PathBuf::from("test_no_extension");
-	let path_to_cache = get_cache_path(&path_to_contract);
-	assert_matches!(path_to_cache, Err(CacheError::InvalidContractExtension(_)));
+	let contract_path = PathBuf::from("test_no_extension");
+	let cache_path = get_cache_path(&contract_path);
+	assert_matches!(cache_path, Err(CacheError::InvalidContractExtension(_)));
 }
