@@ -118,7 +118,25 @@ fn get_cache_path_for_valid_contract_path() {
 	let expected = PathBuf::from(
 		cache_dir.join("cairo-foundry-cache/test_valid_program_in_arbitrary_path.json"),
 	);
-	assert_eq!(cache_path, expected)
+	assert_eq!(cache_path, expected);
+
+	// nested dir in test_cairo_contracts dir
+	let root_dir = PathBuf::from(current_dir.join("test_cairo_contracts"));
+	let contract_path = PathBuf::from(
+		root_dir
+			.join("test_nested_dir")
+			.join("test_valid_program_in_cairo_contracts_dir.cairo"),
+	);
+	let cache_path = get_cache_path(&contract_path, &root_dir).unwrap();
+
+	let cache_dir = dirs::cache_dir().unwrap();
+	let expected = PathBuf::from(
+		cache_dir
+			.join("cairo-foundry-cache")
+			.join("test_nested_dir")
+			.join("test_valid_program_in_cairo_contracts_dir.json"),
+	);
+	assert_eq!(cache_path, expected);
 }
 
 #[test]
