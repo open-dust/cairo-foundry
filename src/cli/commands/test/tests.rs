@@ -108,11 +108,17 @@ fn get_cache_path_for_valid_contract_path_in_project_root_dir() {
 
 #[test]
 fn get_cache_path_for_invalid_contract_extension() {
+	// incorrect extension
 	let path_to_contract = PathBuf::from("test_invalid_extension.sol");
 	let path_to_cache = get_cache_path(&path_to_contract);
 	assert_matches!(path_to_cache, Err(CacheError::InvalidContractExtension(_)));
 
 	let path_to_contract = PathBuf::from("test_invalid_extension.rs");
+	let path_to_cache = get_cache_path(&path_to_contract);
+	assert_matches!(path_to_cache, Err(CacheError::InvalidContractExtension(_)));
+
+	// no extension
+	let path_to_contract = PathBuf::from("test_invalid_extension");
 	let path_to_cache = get_cache_path(&path_to_contract);
 	assert_matches!(path_to_cache, Err(CacheError::InvalidContractExtension(_)));
 }

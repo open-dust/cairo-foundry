@@ -50,8 +50,7 @@ pub mod cache {
 		// check if contract_path have .cairo extension
 		check_valid_cairo_contract(contract_path)?;
 		let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
-		let contract_name =
-			contract_path.file_stem().ok_or(CacheError::FileStemDoesNotExist)?;
+		let contract_name = contract_path.file_stem().ok_or(CacheError::FileStemDoesNotExist)?;
 
 		let mut cache_path =
 			PathBuf::from(cache_dir.join(CAIRO_FOUNDRY_CACHE_DIR).join(contract_name));
@@ -62,8 +61,7 @@ pub mod cache {
 	fn get_compiled_contract_path(contract_path: &PathBuf) -> Result<PathBuf, CacheError> {
 		check_valid_cairo_contract(contract_path)?;
 		let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
-		let contract_name =
-			contract_path.file_stem().ok_or(CacheError::FileStemDoesNotExist)?;
+		let contract_name = contract_path.file_stem().ok_or(CacheError::FileStemDoesNotExist)?;
 		let mut compiled_contract_path =
 			PathBuf::from(cache_dir.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR).join(contract_name));
 		compiled_contract_path.set_extension("json");
