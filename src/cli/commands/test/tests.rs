@@ -143,17 +143,26 @@ fn get_cache_path_for_valid_contract_path() {
 fn get_cache_path_for_invalid_contract_extension() {
 	let current_dir = std::env::current_dir().unwrap();
 	// incorrect extension sol
-	let contract_path = PathBuf::from("test_invalid_extension.sol");
+	let contract_path = PathBuf::from(current_dir.join("test_invalid_extension.sol"));
 	let cache_path = get_cache_path(&contract_path, &current_dir);
 	assert_matches!(cache_path, Err(CacheError::InvalidContractExtension(_)));
 
 	// incorrect extension rs
-	let contract_path = PathBuf::from("test_invalid_extension.rs");
+	let contract_path = PathBuf::from(current_dir.join("test_invalid_extension.rs"));
 	let cache_path = get_cache_path(&contract_path, &current_dir);
 	assert_matches!(cache_path, Err(CacheError::InvalidContractExtension(_)));
 
 	// no extension
-	let contract_path = PathBuf::from("test_no_extension");
+	let contract_path = PathBuf::from(current_dir.join("test_no_extension"));
 	let cache_path = get_cache_path(&contract_path, &current_dir);
 	assert_matches!(cache_path, Err(CacheError::InvalidContractExtension(_)));
+}
+
+#[test]
+fn get_cache_path_for_invalid_root_dir() {
+	let current_dir = std::env::current_dir().unwrap();
+	// incorrect rootdir
+	let contract_path = PathBuf::from("test_invalid_root_dir.cairo");
+	let cache_path = get_cache_path(&contract_path, &current_dir);
+	assert_matches!(cache_path, Err(CacheError::StripPrefixError(_)));
 }
