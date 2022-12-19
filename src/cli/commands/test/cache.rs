@@ -19,7 +19,7 @@ pub mod cache {
 		#[error("cache directory does not exist on this platform")]
 		CacheDirNotSupportedError,
 		#[error("filename does not exist")]
-		InvalidContractExtension(String),
+		InvalidContractExtension(PathBuf),
 		#[error(transparent)]
 		StripPrefixError(#[from] std::path::StripPrefixError),
 	}
@@ -33,20 +33,22 @@ pub mod cache {
 
 	fn is_valid_cairo_contract(contract_path: &PathBuf) -> Result<(), CacheError> {
 		// check if contract_path have .cairo extension
-		let extension = contract_path
-			.extension()
-			.ok_or(CacheError::InvalidContractExtension(format!(" ")))?;
+		let extension = contract_path.extension();
 
-		// assert extension to be cairo
-		if extension != "cairo" {
-			// convert osStr to string
-			match extension.to_str() {
-				Some(extension) =>
-					return Err(CacheError::InvalidContractExtension(extension.to_string())),
-				None => return Err(CacheError::InvalidContractExtension(" ".to_string())),
-			}
+		match extension {
+			Some(ext) =>
+				if ext != "cairo" {
+					return Err(CacheError::InvalidContractExtension(
+						contract_path.to_owned(),
+					))
+				} else {
+					return Ok(())
+				},
+			None =>
+				return Err(CacheError::InvalidContractExtension(
+					contract_path.to_owned(),
+				)),
 		}
-		Ok(())
 	}
 
 	pub fn get_cache_path(
