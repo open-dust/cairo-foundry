@@ -36,12 +36,15 @@ pub mod cache {
 		let extension = contract_path
 			.extension()
 			.ok_or(CacheError::InvalidContractExtension(format!(" ")))?;
+
 		// assert extension to be cairo
 		if extension != "cairo" {
 			// convert osStr to string
-			return Err(CacheError::InvalidContractExtension(
-				extension.to_str().to_owned().unwrap().to_string(),
-			))
+			match extension.to_str() {
+				Some(extension) =>
+					return Err(CacheError::InvalidContractExtension(extension.to_string())),
+				None => return Err(CacheError::InvalidContractExtension(" ".to_string())),
+			}
 		}
 		Ok(())
 	}
