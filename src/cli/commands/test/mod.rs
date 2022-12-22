@@ -242,6 +242,29 @@ pub(crate) fn test_single_entrypoint(
 	Ok((output, test_success).into())
 }
 
+/// Run tests for a single file
+///
+/// The given `hint_processor` is The hint processor , `path_to_original` is the path to the original file, and `path_to_compiled` is the path
+/// to the compiled file. The `test_entrypoints` are the entrypoints of the file. The `hooks` are the hooks to be used for the execution.
+///
+/// Returns a `TestResult` which contains the output of the test and the test status.Only when all tests are successful, the test status is `TestStatus::SUCCESS`.
+///
+/// # Example
+///
+/// Basic usage:
+///
+/// ```ignore
+/// let hint_processor = setup_hint_processor();
+/// let hooks = setup_hooks();
+/// let (path_to_original, path_to_compiled, test_entrypoints) = compile_and_list_entrypoints(path_to_code)?;
+/// let test_result = run_tests_for_one_file(
+///  					&hint_processor,
+///  					path_to_original,
+///  					path_to_compiled,
+///  					test_entrypoints,
+///  					hooks.clone()
+/// 				)?;
+/// ```
 fn run_tests_for_one_file(
 	hint_processor: &BuiltinHintProcessor,
 	path_to_original: PathBuf,
