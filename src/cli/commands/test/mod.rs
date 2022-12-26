@@ -37,6 +37,7 @@ use crate::{
 	hooks,
 };
 
+/// Enum containing the possible errors that you may encounter in the ``Test``module
 #[derive(Error, Debug)]
 pub enum TestCommandError {
 	#[error("Failed to list test entrypoints for file {0}: {1}")]
@@ -57,6 +58,8 @@ pub enum TestCommandError {
 	ListCommandError(#[from] ListCommandError),
 }
 
+/// Structure containing the path to a cairo directory.
+/// Used to execute all the tests files contained in this directory
 #[derive(Args, Debug)]
 pub struct TestArgs {
 	/// Path to a cairo directory
@@ -64,11 +67,35 @@ pub struct TestArgs {
 	pub root: PathBuf,
 }
 
+/// Structure representing the result of one or multiple test.
+/// Contains the output of the test, as well as a boolean representing the success
 pub struct TestResult {
 	pub output: String,
 	pub success: bool,
 }
 
+/// Get the list of test entrypoint from a compiled cairo file.
+/// test entrypoint are function starting with "test_".
+/// The function will return a list of test entrypoint as `String` (ie: "test_function");
+///
+/// return a vector of entrypoints
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```ignore
+/// //assuming your program have a "test_function1" and "test_function2" functions.
+///
+/// let plain_path = PathBuf::from("path_to_your_program");
+/// let compiled_path = compile(&plain_path)?;
+/// let expected_entrypoints = vec![
+/// 	"test_function1",
+/// 	"test_function2"
+/// ]
+///
+/// assert_eq!(list_test_entrypoints(compiled_path), expected_entrypoints);
+/// ```
 fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, TestCommandError> {
 	let re = Regex::new(r"__main__.(test_\w+)$").expect("Should be a valid regex");
 	let data = fs::read_to_string(compiled_path)?;
@@ -122,6 +149,10 @@ fn setup_hint_processor() -> BuiltinHintProcessor {
 	hint_processor
 }
 
+///create a new ``Hooks`` object, with the followings hooks:
+/// - pre_step_instructions
+///
+/// see [src/hooks.rs]
 fn setup_hooks() -> Hooks {
 	Hooks::new(Arc::new(hooks::pre_step_instruction))
 }
@@ -134,6 +165,22 @@ fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, ListCommandError> {
 	.map(|cmd_output: ListOutput| cmd_output.files)
 }
 
+/// compile a cairo file, returning a truple
+/// (path_to_original_code, path_to_compiled_code, entrypoints)
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```ignore
+/// let plain_path = PathBuf::from("path_to_your_program");
+/// let compiled_path = compile(&plain_path);
+/// let entypoints = list_test_entrypoints(compiled_path);
+///
+/// assert_eq!(
+/// 	compile_and_list_entrypoints(plain_path),
+/// 	(plain_path, compiled_path, entrypoints)
+/// )
+/// ```
 fn compile_and_list_entrypoints(
 	path_to_code: PathBuf,
 ) -> Result<(PathBuf, PathBuf, Vec<String>), TestCommandError> {
@@ -151,6 +198,27 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 	clear_buffer(execution_uuid);
 }
 
+/// Execute a single test.
+/// this function will tale a program and an entrypoint name, will search for this entrypoint and
+/// execute the selected test.
+/// It will then return a TestResult, containing the test output and status (success or failure),
+/// or an error.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```ignore
+/// //assuming your program have a "test_function1" and "test_function2" functions.
+///
+/// let hint_processor = setup_hint_processor();
+/// let plain_path = PathBuf::from("path_to_your_program");
+/// let compiled_path = compile(&plain_path)?;
+/// let program = deserialize_program_json(&compiled_path)?;
+///
+/// test_single_entrypoint(program, "test_function1", hint_processor, None);
+/// test_single_entrypoint(program, "test_function2", hint_processor, None);
+/// ```
 pub(crate) fn test_single_entrypoint(
 	program: ProgramJson,
 	test_entrypoint: String,
@@ -203,14 +271,15 @@ pub(crate) fn test_single_entrypoint(
 
 	// Display the execution output if present
 	match runner.get_output(&mut vm) {
-		Ok(runner_output) =>
+		Ok(runner_output) => {
 			if !runner_output.is_empty() {
 				output.push_str(&format!(
 					"[{}]:\n{}",
 					"execution output".purple(),
 					&runner_output
 				));
-			},
+			}
+		},
 		Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
 	};
 
@@ -218,6 +287,27 @@ pub(crate) fn test_single_entrypoint(
 	Ok((output, test_success))
 }
 
+/// Run every test contained in a cairo file.
+/// this function will deserialize a compiled cairo file, and call ``test_single_entrypoint`` on
+/// each entrypoint provided.
+/// It will then return a TestResult corresponding to all the tests (SUCCESS if all the test
+/// succeded, FAILURE otherwise).
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```ignore
+/// //assuming your program have a "test_function1" and "test_function2" functions.
+///
+/// let hint_processor = setup_hint_processor();
+/// let plain_path = PathBuf::from("path_to_your_program");
+/// let compiled_path = compile(&plain_path)?;
+/// let hooks = setup_hooks();
+///
+/// run_test_for_one_file(hint_processor, plain_path, compiled_path, vec!("test_function1",
+/// "test_fuction2"), hooks);
+/// ```
 fn run_tests_for_one_file(
 	hint_processor: &BuiltinHintProcessor,
 	path_to_original: PathBuf,
@@ -266,14 +356,15 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 			.map(compile_and_list_entrypoints)
 			.map(|res| -> Result<TestResult, TestCommandError> {
 				match res {
-					Ok((path_to_original, path_to_compiled, test_entrypoints)) =>
+					Ok((path_to_original, path_to_compiled, test_entrypoints)) => {
 						run_tests_for_one_file(
 							&hint_processor,
 							path_to_original,
 							path_to_compiled,
 							test_entrypoints,
 							hooks.clone(),
-						),
+						)
+					},
 					Err(err) => Err(err),
 				}
 			})
