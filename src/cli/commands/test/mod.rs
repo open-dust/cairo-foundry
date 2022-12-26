@@ -67,11 +67,35 @@ pub struct TestArgs {
 	pub root: PathBuf,
 }
 
+#[derive(PartialEq)]
+pub enum TestStatus {
+	SUCCESS,
+	FAILURE,
+}
+
+impl Into<bool> for TestStatus {
+	fn into(self) -> bool {
+		match self {
+			TestStatus::SUCCESS => true,
+			TestStatus::FAILURE => false,
+		}
+	}
+}
+
 /// Structure representing the result of one or multiple test.
-/// Contains the output of the test, as well as a boolean representing the success
+/// Contains the output of the test, as well as the status.
 pub struct TestResult {
 	pub output: String,
-	pub success: bool,
+	pub success: TestStatus,
+}
+
+impl From<(String, TestStatus)> for TestResult {
+	fn from(from: (String, TestStatus)) -> Self {
+		Self {
+			output: from.0,
+			success: from.1,
+		}
+	}
 }
 
 /// Get the list of test entrypoint from a compiled cairo file.
@@ -157,6 +181,9 @@ fn setup_hooks() -> Hooks {
 	Hooks::new(Arc::new(hooks::pre_step_instruction))
 }
 
+/// List the cairo files contained in a directory.
+/// Takes a path to a directory, and return a list of exact path to all cairo files contained into
+/// this directory.
 fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, ListCommandError> {
 	ListArgs {
 		root: PathBuf::from(root),
@@ -201,8 +228,7 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 /// Execute a single test.
 /// this function will tale a program and an entrypoint name, will search for this entrypoint and
 /// execute the selected test.
-/// It will then return a TestResult, containing the test output and status (success or failure),
-/// or an error.
+/// It will then return a TestResult, representing the output of the test.
 ///
 /// # Examples
 ///
@@ -224,7 +250,7 @@ pub(crate) fn test_single_entrypoint(
 	test_entrypoint: String,
 	hint_processor: &BuiltinHintProcessor,
 	hooks: Option<Hooks>,
-) -> Result<(String, bool), TestCommandError> {
+) -> Result<TestResult, TestCommandError> {
 	let start = Instant::now();
 	let mut output = String::new();
 	let execution_uuid = Uuid::new_v4();
@@ -242,13 +268,13 @@ pub(crate) fn test_single_entrypoint(
 				test_entrypoint,
 				duration
 			));
-			(Some(res), true)
+			(Some(res), TestStatus::SUCCESS)
 		},
 		Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
 			custom_error_message,
 		))) if custom_error_message == "skip" => {
 			output.push_str(&format!("[{}] {}\n", "SKIPPED".yellow(), test_entrypoint,));
-			(None, true)
+			(None, TestStatus::SUCCESS)
 		},
 		Err(CairoRunError::VirtualMachine(VirtualMachineError::CustomHint(
 			custom_error_message,
@@ -258,7 +284,7 @@ pub(crate) fn test_single_entrypoint(
 				"FAILED".red(),
 				test_entrypoint,
 			));
-			(None, false)
+			(None, TestStatus::FAILURE)
 		},
 		Err(e) => Err(TestCommandError::CairoRunError(e))?,
 	};
@@ -266,7 +292,7 @@ pub(crate) fn test_single_entrypoint(
 	purge_hint_buffer(&execution_uuid, &mut output);
 	let (mut runner, mut vm) = match opt_runner_and_output {
 		Some(runner_and_vm) => runner_and_vm,
-		None => return Ok((output, test_success)),
+		None => return Ok((output, test_success).into()),
 	};
 
 	// Display the execution output if present
@@ -284,7 +310,7 @@ pub(crate) fn test_single_entrypoint(
 	};
 
 	output.push('\n');
-	Ok((output, test_success))
+	Ok((output, test_success).into())
 }
 
 /// Run every test contained in a cairo file.
@@ -317,7 +343,8 @@ fn run_tests_for_one_file(
 ) -> Result<TestResult, TestCommandError> {
 	let program_json = deserialize_program_json(&path_to_compiled)?;
 
-	let (tests_output, tests_success) = test_entrypoints
+	let output = format!("Running tests in file {}\n", path_to_original.display());
+	let res = test_entrypoints
 		.into_iter()
 		.map(|test_entrypoint| {
 			test_single_entrypoint(
@@ -329,20 +356,17 @@ fn run_tests_for_one_file(
 		})
 		.collect::<Result<Vec<_>, TestCommandError>>()?
 		.into_iter()
-		.fold((String::new(), true), |mut a, b| {
-			a.0.push_str(&b.0);
-			a.1 &= b.1;
+		.fold((output, TestStatus::SUCCESS), |mut a, b| {
+			a.0.push_str(&b.output);
+			// SUCCESS if both a.1 and b.success are SUCCESS, otherwise, FAILURE
+			a.1 = if a.1 == TestStatus::SUCCESS && b.success == TestStatus::SUCCESS {
+				TestStatus::SUCCESS
+			} else {
+				TestStatus::FAILURE
+			};
 			a
 		});
-
-	Ok(TestResult {
-		output: format!(
-			"Running tests in file {}\n{}",
-			path_to_original.display(),
-			tests_output
-		),
-		success: tests_success,
-	})
+	Ok(res.into())
 }
 
 impl CommandExecution<TestOutput, TestCommandError> for TestArgs {

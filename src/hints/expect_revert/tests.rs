@@ -9,7 +9,10 @@ fn test_expect_revert(
 	#[case] expected_success: bool,
 ) -> Result<(), TestCommandError> {
 	let path = std::path::PathBuf::from(path);
-	let (_, actual_success) = run_single_test("test_expect_revert", &path).expect("Should be Ok");
-	assert_eq!(expected_success, actual_success);
+	let result: bool = run_single_test("test_expect_revert", &path)
+		.expect("Should be Ok")
+		.success
+		.into();
+	assert_eq!(expected_success, result);
 	Ok(())
 }
