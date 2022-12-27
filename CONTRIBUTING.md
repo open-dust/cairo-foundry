@@ -7,6 +7,17 @@ Make sure you read those guidelines before starting to make sure your contributi
 
 You should always include tests and documentation (e.g. comments) where needed.
 
+To guarantee smooth cooperation and limit redundancies, follow these steps to contribute to the repo:
+- ask for assignment on an issue by commenting on it 🙋‍♂️. 
+    - It is strongly recommended to indicate the ideas you have to solve the issue (technical conception, architectural choices, etc.) to help maintainers understand your implementation.
+
+- wait for assignment by maintainers. 
+    - you can ping maintainers on [discord](https://discord.gg/7RqGMYKT).
+
+- open a pull request or draft pull request and ask for review 💁
+
+- wait for approval and meeeerge! ✅ 🔥
+
 ## Creating Pull Requests (PRs)
 
 As a contributor, you are expected to fork this repository, work on your own fork and then submit pull requests.
