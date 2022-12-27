@@ -174,7 +174,7 @@ fn setup_hint_processor() -> BuiltinHintProcessor {
 }
 
 ///create a new ``Hooks`` object, with the followings hooks:
-/// - pre_step_instructions
+/// - pre_step_instruction
 ///
 /// see [src/hooks.rs]
 fn setup_hooks() -> Hooks {
@@ -201,7 +201,7 @@ fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, ListCommandError> {
 /// ```ignore
 /// let plain_path = PathBuf::from("path_to_your_program");
 /// let compiled_path = compile(&plain_path);
-/// let entypoints = list_test_entrypoints(compiled_path);
+/// let entrypoints = list_test_entrypoints(compiled_path);
 ///
 /// assert_eq!(
 /// 	compile_and_list_entrypoints(plain_path),
