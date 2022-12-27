@@ -37,7 +37,7 @@ use crate::{
 	hooks,
 };
 
-/// Enum containing the possible errors that you may encounter in the ``Test``module
+/// Enum containing the possible errors that you may encounter in the ``Test`` module
 #[derive(Error, Debug)]
 pub enum TestCommandError {
 	#[error("Failed to list test entrypoints for file {0}: {1}")]
@@ -226,7 +226,7 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 }
 
 /// Execute a single test.
-/// this function will tale a program and an entrypoint name, will search for this entrypoint and
+/// this function will take a program and an entrypoint name, will search for this entrypoint and
 /// execute the selected test.
 /// It will then return a TestResult, representing the output of the test.
 ///
