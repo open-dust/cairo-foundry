@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use cairo_rs::{
 	bigint,
 	hint_processor::hint_processor_definition::HintProcessor,
-	types::program::Program,
+	types::{program::Program, relocatable::Relocatable},
 	vm::{
 		errors::{cairo_run_errors::CairoRunError, vm_errors::VirtualMachineError},
 		hook::Hooks,
@@ -15,7 +15,7 @@ use num_bigint::BigInt;
 use uuid::Uuid;
 
 use crate::{
-	hints::{EXECUTION_UUID_VAR_NAME, EXPECT_REVERT_FLAG, MOCK_CALL_KEY},
+	hints::{EXECUTION_UUID_VAR_NAME, EXPECT_REVERT_FLAG, MOCK_CALL_FELT_KEY, MOCK_CALL_KEY},
 	hooks::HOOKS_VAR_NAME,
 };
 
@@ -47,8 +47,11 @@ pub fn cairo_run(
 	}
 
 	// Init exec context for mock_call
-	let hashmap: HashMap<usize, BigInt> = HashMap::new();
-	cairo_runner.exec_scopes.insert_value(MOCK_CALL_KEY, hashmap);
+	let mock_felt_hashmap: HashMap<usize, BigInt> = HashMap::new();
+	cairo_runner.exec_scopes.insert_value(MOCK_CALL_FELT_KEY, mock_felt_hashmap);
+
+	let mock_call_hashmap: HashMap<usize, (usize, Relocatable)> = HashMap::new();
+	cairo_runner.exec_scopes.insert_value(MOCK_CALL_KEY, mock_call_hashmap);
 
 	let execution_result = cairo_runner.run_until_pc(end, &mut vm, hint_processor);
 	let should_revert = cairo_runner.exec_scopes.get_any_boxed_ref(EXPECT_REVERT_FLAG).is_ok();

@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use cairo_rs::{
-	types::{exec_scope::ExecutionScopes, instruction::Opcode},
+	types::{exec_scope::ExecutionScopes, instruction::Opcode, relocatable::Relocatable},
 	vm::{errors::vm_errors::VirtualMachineError, vm_core::VirtualMachine},
 };
 use num_bigint::BigInt;
 
-use crate::hints::MOCK_CALL_KEY;
+use crate::hints::{MOCK_CALL_FELT_KEY, MOCK_CALL_KEY};
 
 pub const HOOKS_VAR_NAME: &str = "hooks";
 
@@ -32,19 +32,44 @@ pub fn pre_step_instruction(
 
 		let new_pc = vm.compute_new_pc(&instruction, &operands)?;
 
+		let mocks_felt = exec_scopes
+			.get_any_boxed_mut(MOCK_CALL_FELT_KEY)?
+			.downcast_mut::<HashMap<usize, BigInt>>()
+			.ok_or_else(|| {
+				VirtualMachineError::VariableNotInScopeError(MOCK_CALL_FELT_KEY.to_string())
+			})?;
+		if let Some(mocked_ret_value) = mocks_felt.get(&new_pc.offset) {
+			let pc = vm.get_pc().clone();
+			let ap = vm.get_ap();
+			vm.insert_value(&ap, mocked_ret_value)?;
+			vm.set_ap(ap.offset + 1);
+			vm.set_pc(pc.add(2)?);
+			vm.skip_next_instruction_execution();
+		}
+
 		let mocks = exec_scopes
 			.get_any_boxed_mut(MOCK_CALL_KEY)?
-			.downcast_mut::<HashMap<usize, BigInt>>()
+			.downcast_mut::<HashMap<usize, (usize, Relocatable)>>()
 			.ok_or_else(|| {
 				VirtualMachineError::VariableNotInScopeError(MOCK_CALL_KEY.to_string())
 			})?;
 
-		if let Some(mocked_ret_value) = mocks.get(&new_pc.offset) {
+		if let Some((mocked_value_len, mocked_value)) = mocks.get(&new_pc.offset) {
 			let pc = vm.get_pc().clone();
 			let ap = vm.get_ap();
-			vm.insert_value(&ap, mocked_ret_value)?;
+			let mocked_values = vm.get_integer_range(mocked_value, *mocked_value_len)?;
+			let mut tmp_buffer = Vec::new();
+			mocked_values.into_iter().for_each(|mocked_value_i| {
+				tmp_buffer.push((*mocked_value_i).clone());
+			});
+			tmp_buffer.into_iter().try_for_each(
+				|tmp: BigInt| -> Result<(), VirtualMachineError> {
+					vm.insert_value(&ap, tmp)?;
+					vm.set_ap(ap.offset + 1);
+					Ok(())
+				},
+			)?;
 			vm.set_pc(pc.add(2)?);
-			vm.set_ap(ap.offset + 1);
 			vm.skip_next_instruction_execution();
 		}
 	}

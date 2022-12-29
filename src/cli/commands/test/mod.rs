@@ -67,7 +67,7 @@ pub struct TestArgs {
 	pub root: PathBuf,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum TestStatus {
 	SUCCESS,
 	FAILURE,
@@ -161,13 +161,18 @@ impl Display for TestOutput {
 
 fn setup_hint_processor() -> BuiltinHintProcessor {
 	let skip_hint = HintFunc(Box::new(hints::skip));
+	let mock_call_felt_hint = HintFunc(Box::new(hints::mock_call_felt));
 	let mock_call_hint = HintFunc(Box::new(hints::mock_call));
 	let expect_revert_hint = HintFunc(Box::new(expect_revert));
 	let mut hint_processor = BuiltinHintProcessor::new_empty();
 	hint_processor.add_hint(String::from("skip()"), skip_hint);
 	hint_processor.add_hint(String::from("expect_revert()"), expect_revert_hint);
 	hint_processor.add_hint(
-		String::from("mock_call(func_to_mock, mock_ret_value)"),
+		String::from("mock_call_felt(func_to_mock, mock_ret_value)"),
+		mock_call_felt_hint,
+	);
+	hint_processor.add_hint(
+		String::from("mock_call(func_to_mock, mock_value_len, mock_value)"),
 		mock_call_hint,
 	);
 	hint_processor
@@ -297,14 +302,15 @@ pub(crate) fn test_single_entrypoint(
 
 	// Display the execution output if present
 	match runner.get_output(&mut vm) {
-		Ok(runner_output) =>
+		Ok(runner_output) => {
 			if !runner_output.is_empty() {
 				output.push_str(&format!(
 					"[{}]:\n{}",
 					"execution output".purple(),
 					&runner_output
 				));
-			},
+			}
+		},
 		Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
 	};
 
@@ -379,14 +385,15 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 			.map(compile_and_list_entrypoints)
 			.map(|res| -> Result<TestResult, TestCommandError> {
 				match res {
-					Ok((path_to_original, path_to_compiled, test_entrypoints)) =>
+					Ok((path_to_original, path_to_compiled, test_entrypoints)) => {
 						run_tests_for_one_file(
 							&hint_processor,
 							path_to_original,
 							path_to_compiled,
 							test_entrypoints,
 							hooks.clone(),
-						),
+						)
+					},
 					Err(err) => Err(err),
 				}
 			})
