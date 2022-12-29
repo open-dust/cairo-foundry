@@ -66,14 +66,13 @@ impl CommandExecution<ListOutput, ListCommandError> for ListArgs {
 	///
 	/// The List Command lists and returns the 'ListOutput' of all the valid
 	/// Cairo tests files within the ListArgs root directory(PathBuf).
-	/// To be valid, the filepath must follow the following regex:
+	/// To be valid, the filename must follow the following regex:
 	///    "^test_.*\.cairo$"
 	///
-	/// Examples
-	///    test_cairo_contracts/test_invalid_program.cairo > Valid
-	///    test_hints/test/minor/failing.cairo > Valid
-	///    test_cairo_hints/test_mock_call.cairo.test > Invalid, ends with "test" not ".cairo"
-	///    mytest_hints/test_skip.cairo > Invalid, starts with "mytests" not "test_"
+	/// Filename examples:
+	///    test_invalid_program.cairo > Valid
+	///    failing.cairo > Invalid, filename does not start with "test_"
+	///    test_mock_call.cairo.test > Invalid, ends with "test" not ".cairo"
 	///
 	/// When using the cairo-compile command, the root directory is the one specified by the option "--root"
 	///
