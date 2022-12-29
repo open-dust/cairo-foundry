@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use super::{
 	compile_and_list_entrypoints, setup_hint_processor, test_single_entrypoint, TestCommandError,
+	TestResult,
 };
 
 use crate::cli::commands::test::cache::cache::{read_cache_file, Cache, CacheError};
@@ -12,7 +13,7 @@ use crate::cli::commands::test::cache::cache::{read_cache_file, Cache, CacheErro
 pub fn run_single_test(
 	test_name: &str,
 	test_path: &PathBuf,
-) -> Result<(String, bool), TestCommandError> {
+) -> Result<TestResult, TestCommandError> {
 	let (_, path_to_compiled, _) = compile_and_list_entrypoints(test_path.to_owned())?;
 
 	let program_json = deserialize_program_json(&path_to_compiled)?;
