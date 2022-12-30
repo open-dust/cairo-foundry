@@ -176,10 +176,14 @@ fn setup_hint_processor() -> BuiltinHintProcessor {
 
 ///create a new ``Hooks`` object, with the followings hooks:
 /// - pre_step_instruction
+/// - post_step_instruction
 ///
 /// see [src/hooks.rs]
 fn setup_hooks() -> Hooks {
-	Hooks::new(Arc::new(hooks::pre_step_instruction))
+	Hooks::new(
+		Arc::new(hooks::pre_step_instruction),
+		Arc::new(hooks::post_step_instruction),
+	)
 }
 
 /// List the cairo files contained in a directory.
