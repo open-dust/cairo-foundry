@@ -27,6 +27,7 @@ pub fn pre_step_instruction(
 	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
 	let instruction = vm.decode_current_instruction()?;
+
 	if instruction.opcode == Opcode::Call {
 		let (operands, _operands_mem_addresses) = vm.compute_operands(&instruction)?;
 
@@ -38,11 +39,13 @@ pub fn pre_step_instruction(
 			.ok_or_else(|| {
 				VirtualMachineError::VariableNotInScopeError(MOCK_CALL_FELT_KEY.to_string())
 			})?;
+
 		if let Some(mocked_ret_value) = mocks_felt.get(&new_pc.offset) {
 			let pc = vm.get_pc().clone();
 			let ap = vm.get_ap();
 			vm.insert_value(&ap, mocked_ret_value)?;
-			vm.set_ap(ap.offset + 1);
+			let new_app = ap.add(1)?;
+			vm.set_ap(new_app.offset);
 			vm.set_pc(pc.add(2)?);
 			vm.skip_next_instruction_execution();
 		}
@@ -56,19 +59,24 @@ pub fn pre_step_instruction(
 
 		if let Some((mocked_value_len, mocked_value)) = mocks.get(&new_pc.offset) {
 			let pc = vm.get_pc().clone();
-			let ap = vm.get_ap();
 			let mocked_values = vm.get_integer_range(mocked_value, *mocked_value_len)?;
 			let mut tmp_buffer = Vec::new();
+			let old_ap = vm.get_ap();
 			mocked_values.into_iter().for_each(|mocked_value_i| {
 				tmp_buffer.push((*mocked_value_i).clone());
 			});
+			println!("{:?}", &tmp_buffer);
 			tmp_buffer.into_iter().try_for_each(
 				|tmp: BigInt| -> Result<(), VirtualMachineError> {
+					let ap = vm.get_ap();
 					vm.insert_value(&ap, tmp)?;
-					vm.set_ap(ap.offset + 1);
+					let new_app = ap.add(1)?;
+					vm.set_ap(new_app.offset);
 					Ok(())
 				},
 			)?;
+			let injected_values = vm.get_integer_range(&old_ap, *mocked_value_len);
+			println!("{:?}", &injected_values);
 			vm.set_pc(pc.add(2)?);
 			vm.skip_next_instruction_execution();
 		}
