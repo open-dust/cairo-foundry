@@ -52,31 +52,17 @@ pub fn pre_step_instruction(
 
 		let mocks = exec_scopes
 			.get_any_boxed_mut(MOCK_CALL_KEY)?
-			.downcast_mut::<HashMap<usize, (usize, Relocatable)>>()
+			.downcast_mut::<HashMap<usize, Relocatable>>()
 			.ok_or_else(|| {
 				VirtualMachineError::VariableNotInScopeError(MOCK_CALL_KEY.to_string())
 			})?;
 
-		if let Some((mocked_value_len, mocked_value)) = mocks.get(&new_pc.offset) {
+		if let Some(mocked_value) = mocks.get(&new_pc.offset) {
 			let pc = vm.get_pc().clone();
-			let mocked_values = vm.get_integer_range(mocked_value, *mocked_value_len)?;
-			let mut tmp_buffer = Vec::new();
-			let old_ap = vm.get_ap();
-			mocked_values.into_iter().for_each(|mocked_value_i| {
-				tmp_buffer.push((*mocked_value_i).clone());
-			});
-			println!("{:?}", &tmp_buffer);
-			tmp_buffer.into_iter().try_for_each(
-				|tmp: BigInt| -> Result<(), VirtualMachineError> {
-					let ap = vm.get_ap();
-					vm.insert_value(&ap, tmp)?;
-					let new_app = ap.add(1)?;
-					vm.set_ap(new_app.offset);
-					Ok(())
-				},
-			)?;
-			let injected_values = vm.get_integer_range(&old_ap, *mocked_value_len);
-			println!("{:?}", &injected_values);
+			let ap = vm.get_ap();
+			vm.insert_value(&ap, mocked_value)?;
+			let new_app = ap.add(1)?;
+			vm.set_ap(new_app.offset);
 			vm.set_pc(pc.add(2)?);
 			vm.skip_next_instruction_execution();
 		}

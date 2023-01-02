@@ -14,16 +14,14 @@ func test_mock_call{output_ptr: felt*}() {
     assert [mock_value] = 1;
     assert [mock_value + 1] = 2;
 
-    // The associated len is 2
-    let mock_value_len = 2;
     let func_to_mock = get_label_location(mocked_func);
 
-    %{ mock_call(func_to_mock, mock_value_len, mock_value) %}
+    %{ mock_call(func_to_mock, mock_value) %}
     let x = mocked_func();
 
-    let (y: felt*) = alloc();
-    memcpy(y, x, 2);
-
+    assert 1 = [x];
+    assert 2 = [x+1];
+    
     return ();
 }
 

@@ -168,11 +168,11 @@ fn setup_hint_processor() -> BuiltinHintProcessor {
 	hint_processor.add_hint(String::from("skip()"), skip_hint);
 	hint_processor.add_hint(String::from("expect_revert()"), expect_revert_hint);
 	hint_processor.add_hint(
-		String::from("mock_call_felt(func_to_mock, mock_ret_value)"),
+		String::from("mock_call_felt(func_to_mock, mock_value)"),
 		mock_call_felt_hint,
 	);
 	hint_processor.add_hint(
-		String::from("mock_call(func_to_mock, mock_value_len, mock_value)"),
+		String::from("mock_call(func_to_mock, mock_value)"),
 		mock_call_hint,
 	);
 	hint_processor

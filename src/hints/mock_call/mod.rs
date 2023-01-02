@@ -10,7 +10,6 @@ use cairo_rs::{
 	vm::{errors::vm_errors::VirtualMachineError, vm_core::VirtualMachine},
 };
 use num_bigint::BigInt;
-use num_traits::ToPrimitive;
 
 #[cfg(test)]
 mod tests;
@@ -26,18 +25,14 @@ pub fn mock_call(
 	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
 	let func_to_mock = get_ptr_from_var_name("func_to_mock", vm, ids_data, ap_tracking)?;
-	let mock_value_len = get_integer_from_var_name("mock_value_len", vm, ids_data, ap_tracking)?;
 	let mock_value = get_ptr_from_var_name("mock_value", vm, ids_data, ap_tracking)?;
 
 	let mocks = exec_scopes
 		.get_any_boxed_mut(MOCK_CALL_KEY)?
-		.downcast_mut::<HashMap<usize, (usize, Relocatable)>>()
+		.downcast_mut::<HashMap<usize, Relocatable>>()
 		.ok_or_else(|| VirtualMachineError::VariableNotInScopeError(MOCK_CALL_KEY.to_string()))?;
 
-	mocks.insert(
-		func_to_mock.offset,
-		((*mock_value_len).to_usize().unwrap_or_default(), mock_value),
-	);
+	mocks.insert(func_to_mock.offset, mock_value);
 	Ok(())
 }
 
@@ -49,7 +44,7 @@ pub fn mock_call_felt(
 	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
 	let func_to_mock = get_ptr_from_var_name("func_to_mock", vm, ids_data, ap_tracking)?;
-	let mock_ret_value = get_integer_from_var_name("mock_ret_value", vm, ids_data, ap_tracking)?;
+	let mock_value = get_integer_from_var_name("mock_value", vm, ids_data, ap_tracking)?;
 
 	let mocks = exec_scopes
 		.get_any_boxed_mut(MOCK_CALL_FELT_KEY)?
@@ -57,7 +52,7 @@ pub fn mock_call_felt(
 		.ok_or_else(|| {
 			VirtualMachineError::VariableNotInScopeError(MOCK_CALL_FELT_KEY.to_string())
 		})?;
-	mocks.insert(func_to_mock.offset, (*mock_ret_value).clone());
+	mocks.insert(func_to_mock.offset, (*mock_value).clone());
 
 	Ok(())
 }
