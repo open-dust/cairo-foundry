@@ -24,6 +24,6 @@ pub mod cache {
 	pub fn read_cache_file(path: &PathBuf) -> Result<Cache, CacheError> {
 		let file = read_to_string(path)?;
 		let data = serde_json::from_str::<Cache>(file.as_str())?;
-		return Ok(data);
+		return Ok(data)
 	}
 }
