@@ -74,10 +74,13 @@ impl CommandExecution<ListOutput, ListCommandError> for ListArgs {
 	///    failing.cairo > Invalid, filename does not start with "test_"
 	///    test_mock_call.cairo.test > Invalid, ends with "test" not ".cairo"
 	///
-	/// When using the cairo-compile command, the root directory is the one specified by the option "--root"
+	/// When using the cairo-compile command, the root directory is the one specified
+	/// by the option "--root"
 	///
 	/// Returns a `ListOutput` struct with all valid tests files in the `.files: vector<PathBuf>`
-	/// or an error `ListCommandError`, the first Error encoutered during the processing of the root directory.
+	/// or an error `ListCommandError`, the first Error encoutered during the
+	/// processing of the root directory.
+
 	fn exec(&self) -> Result<ListOutput, ListCommandError> {
 		info!("Listing files within directory {:?}", self.root);
 
