@@ -65,6 +65,9 @@ pub struct TestArgs {
 	/// Path to a cairo directory
 	#[clap(short, long, value_hint=ValueHint::DirPath, value_parser=path_is_valid_directory, default_value="./")]
 	pub root: PathBuf,
+	/// Max steps cap allowed in a test
+	#[clap(short, long, default_value_t = 1000000)]
+	pub max_steps: u128,
 }
 
 #[derive(PartialEq)]
@@ -297,14 +300,15 @@ pub(crate) fn test_single_entrypoint(
 
 	// Display the execution output if present
 	match runner.get_output(&mut vm) {
-		Ok(runner_output) =>
+		Ok(runner_output) => {
 			if !runner_output.is_empty() {
 				output.push_str(&format!(
 					"[{}]:\n{}",
 					"execution output".purple(),
 					&runner_output
 				));
-			},
+			}
+		},
 		Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
 	};
 
@@ -379,14 +383,15 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 			.map(compile_and_list_entrypoints)
 			.map(|res| -> Result<TestResult, TestCommandError> {
 				match res {
-					Ok((path_to_original, path_to_compiled, test_entrypoints)) =>
+					Ok((path_to_original, path_to_compiled, test_entrypoints)) => {
 						run_tests_for_one_file(
 							&hint_processor,
 							path_to_original,
 							path_to_compiled,
 							test_entrypoints,
 							hooks.clone(),
-						),
+						)
+					},
 					Err(err) => Err(err),
 				}
 			})
