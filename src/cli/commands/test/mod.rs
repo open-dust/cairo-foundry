@@ -1,4 +1,4 @@
-pub mod cache;
+pub mod utils;
 #[cfg(test)]
 pub mod tests;
 
@@ -67,7 +67,7 @@ pub struct TestArgs {
 	pub root: PathBuf,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub enum TestStatus {
 	SUCCESS,
 	FAILURE,
@@ -114,8 +114,8 @@ impl From<(String, TestStatus)> for TestResult {
 /// let plain_path = PathBuf::from("path_to_your_program");
 /// let compiled_path = compile(&plain_path)?;
 /// let expected_entrypoints = vec![
-/// 	"test_function1",
-/// 	"test_function2"
+/// "test_function1",
+/// "test_function2"
 /// ]
 ///
 /// assert_eq!(list_test_entrypoints(compiled_path), expected_entrypoints);
@@ -204,8 +204,8 @@ fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, ListCommandError> {
 /// let entrypoints = list_test_entrypoints(compiled_path);
 ///
 /// assert_eq!(
-/// 	compile_and_list_entrypoints(plain_path),
-/// 	(plain_path, compiled_path, entrypoints)
+/// compile_and_list_entrypoints(plain_path),
+/// (plain_path, compiled_path, entrypoints)
 /// )
 /// ```
 fn compile_and_list_entrypoints(

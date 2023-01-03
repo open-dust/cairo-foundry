@@ -14,7 +14,7 @@ pub mod cache {
 		DeserializeError(#[from] serde_json::Error),
 	}
 
-	#[derive(Serialize, Deserialize, Debug, PartialEq)]
+	#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 	pub struct Cache {
 		pub contract_path: PathBuf,
 		pub compiled_contract_path: PathBuf,
@@ -24,6 +24,6 @@ pub mod cache {
 	pub fn read_cache_file(path: &PathBuf) -> Result<Cache, CacheError> {
 		let file = read_to_string(path)?;
 		let data = serde_json::from_str::<Cache>(file.as_str())?;
-		return Ok(data)
+		Ok(data)
 	}
 }
