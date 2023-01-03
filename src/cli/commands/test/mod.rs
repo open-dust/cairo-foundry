@@ -67,7 +67,7 @@ pub struct TestArgs {
 	pub root: PathBuf,
 	/// Max steps cap allowed in a test
 	#[clap(short, long, default_value_t = 1000000)]
-	pub max_steps: u128,
+	pub max_steps: u64,
 }
 
 #[derive(PartialEq)]
