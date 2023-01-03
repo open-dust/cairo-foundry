@@ -27,6 +27,10 @@ pub enum ListCommandError {
 	ListFilesError(#[from] walkdir::Error),
 }
 
+/// Function used to validate directory type of the specified Path
+/// `path: &str` the Path to test
+/// Returns the `PathBuf` for the given path
+/// or an Err with the Path if it does not exist or if it is not a directory.
 pub fn path_is_valid_directory(path: &str) -> Result<PathBuf, String> {
 	let path = PathBuf::from(path);
 	if path.exists() && path.is_dir() {
@@ -58,6 +62,25 @@ impl fmt::Display for ListOutput {
 }
 
 impl CommandExecution<ListOutput, ListCommandError> for ListArgs {
+	/// Implementation of CommandExecution Trait for the List Command
+	///
+	/// The List Command lists and returns the 'ListOutput' of all the valid
+	/// Cairo tests files within the ListArgs root directory(PathBuf).
+	/// To be valid, the filename must follow the following regex:
+	///    "^test_.*\.cairo$"
+	///
+	/// Filename examples:
+	///    test_invalid_program.cairo > Valid
+	///    failing.cairo > Invalid, filename does not start with "test_"
+	///    test_mock_call.cairo.test > Invalid, ends with "test" not ".cairo"
+	///
+	/// When using the cairo-compile command, the root directory is the one specified
+	/// by the option "--root"
+	///
+	/// Returns a `ListOutput` struct with all valid tests files in the `.files: vector<PathBuf>`
+	/// or an error `ListCommandError`, the first Error encoutered during the
+	/// processing of the root directory.
+
 	fn exec(&self) -> Result<ListOutput, ListCommandError> {
 		info!("Listing files within directory {:?}", self.root);
 
