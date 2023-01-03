@@ -8,7 +8,7 @@ use super::{
 	TestResult,
 };
 
-use crate::cli::commands::test::utils::cache::{read_cache_file, Cache, CacheError};
+use crate::cli::commands::test::cache::{read_cache_file, Cache, CacheError};
 
 pub fn run_single_test(
 	test_name: &str,
