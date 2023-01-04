@@ -59,7 +59,7 @@ pub mod cache {
 		return Ok(cache_path)
 	}
 
-	fn get_compiled_contract_path(
+	pub fn get_compiled_contract_path(
 		contract_path: &PathBuf,
 		root_dir: &PathBuf,
 	) -> Result<PathBuf, CacheError> {

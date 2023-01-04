@@ -1,7 +1,6 @@
 use crate::cli::commands::{test::TestArgs, CommandExecution};
 use assert_matches::assert_matches;
 use cairo_rs::serde::deserialize_program::deserialize_program_json;
-use serde::de::Expected;
 use std::path::PathBuf;
 
 use super::{
@@ -9,8 +8,11 @@ use super::{
 };
 
 use crate::cli::commands::test::cache::cache::{
-	get_cache_path, read_cache_file, Cache, CacheError,
+	get_cache_path, read_cache_file, Cache, CacheError, get_compiled_contract_path
 };
+
+// const CAIRO_FOUNDRY_CACHE_DIR: &str = "cairo-foundry-cache";
+const CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR: &str = "compiled-cairo-files";
 
 pub fn run_single_test(
 	test_name: &str,
@@ -165,4 +167,22 @@ fn get_cache_path_for_invalid_root_dir() {
 	let contract_path = PathBuf::from("test_invalid_root_dir.cairo");
 	let cache_path = get_cache_path(&contract_path, &current_dir);
 	assert_matches!(cache_path, Err(CacheError::StripPrefixError(_)));
+}
+
+#[test]
+fn get_compiled_contract_path_for_valid_contract_path(){
+	let current_dir = std::env::current_dir().unwrap();
+	let root_dir = current_dir.join("test_cairo_contracts");
+
+
+	let contract_path =
+		root_dir.join("test_valid_program_in_test_cairo_contracts_dir.cairo");
+	let compiled_contract_path = get_compiled_contract_path(&contract_path, &root_dir).unwrap();
+
+	let cache_dir = dirs::cache_dir().unwrap();
+	assert_eq!(compiled_contract_path, cache_dir.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR).join("test_valid_program_in_test_cairo_contracts_dir.json"));
+
+	let contract_path = root_dir.join("test_nested_dir").join("test_valid_program_in_nested_dir.cairo");
+	let compiled_contract_path = get_compiled_contract_path(&contract_path, &root_dir).unwrap();
+	assert_eq!(compiled_contract_path, cache_dir.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR).join("test_nested_dir").join("test_valid_program_in_nested_dir.json"));
 }
