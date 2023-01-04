@@ -186,3 +186,22 @@ fn get_compiled_contract_path_for_valid_contract_path(){
 	let compiled_contract_path = get_compiled_contract_path(&contract_path, &root_dir).unwrap();
 	assert_eq!(compiled_contract_path, cache_dir.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR).join("test_nested_dir").join("test_valid_program_in_nested_dir.json"));
 }
+
+#[test]
+fn get_compiled_contract_path_for_invalid_contract_extension() {
+	let current_dir = std::env::current_dir().unwrap();
+	// incorrect extension sol
+	let contract_path = current_dir.join("test_invalid_extension.sol");
+	let cache_path = get_compiled_contract_path(&contract_path, &current_dir);
+	assert_matches!(cache_path, Err(CacheError::InvalidContractExtension(_)));
+
+	// incorrect extension rs
+	let contract_path = current_dir.join("test_invalid_extension.rs");
+	let cache_path = get_compiled_contract_path(&contract_path, &current_dir);
+	assert_matches!(cache_path, Err(CacheError::InvalidContractExtension(_)));
+
+	// no extension
+	let contract_path = current_dir.join("test_no_extension");
+	let cache_path = get_compiled_contract_path(&contract_path, &current_dir);
+	assert_matches!(cache_path, Err(CacheError::InvalidContractExtension(_)));
+}
