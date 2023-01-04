@@ -32,9 +32,9 @@ pub mod cache {
 	}
 
 	fn is_valid_cairo_contract(contract_path: &PathBuf) -> Result<(), CacheError> {
-		let extension = contract_path.extension().ok_or(CacheError::InvalidContractExtension(
-			contract_path.to_owned(),
-		))?;
+		let extension = contract_path
+			.extension()
+			.ok_or_else(|| CacheError::InvalidContractExtension(contract_path.to_owned()))?;
 		if extension != "cairo" {
 			return Err(CacheError::InvalidContractExtension(
 				contract_path.to_owned(),
