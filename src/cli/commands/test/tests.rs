@@ -8,7 +8,7 @@ use super::{
 };
 
 use crate::cli::commands::test::cache::cache::{
-	get_cache_path, read_cache_file, Cache, CacheError, get_compiled_contract_path
+	get_cache_path, get_compiled_contract_path, read_cache_file, Cache, CacheError,
 };
 
 // const CAIRO_FOUNDRY_CACHE_DIR: &str = "cairo-foundry-cache";
@@ -170,21 +170,31 @@ fn get_cache_path_for_invalid_root_dir() {
 }
 
 #[test]
-fn get_compiled_contract_path_for_valid_contract_path(){
+fn get_compiled_contract_path_for_valid_contract_path() {
 	let current_dir = std::env::current_dir().unwrap();
 	let root_dir = current_dir.join("test_cairo_contracts");
 
-
-	let contract_path =
-		root_dir.join("test_valid_program_in_test_cairo_contracts_dir.cairo");
+	let contract_path = root_dir.join("test_valid_program_in_test_cairo_contracts_dir.cairo");
 	let compiled_contract_path = get_compiled_contract_path(&contract_path, &root_dir).unwrap();
 
 	let cache_dir = dirs::cache_dir().unwrap();
-	assert_eq!(compiled_contract_path, cache_dir.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR).join("test_valid_program_in_test_cairo_contracts_dir.json"));
+	assert_eq!(
+		compiled_contract_path,
+		cache_dir
+			.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR)
+			.join("test_valid_program_in_test_cairo_contracts_dir.json")
+	);
 
-	let contract_path = root_dir.join("test_nested_dir").join("test_valid_program_in_nested_dir.cairo");
+	let contract_path =
+		root_dir.join("test_nested_dir").join("test_valid_program_in_nested_dir.cairo");
 	let compiled_contract_path = get_compiled_contract_path(&contract_path, &root_dir).unwrap();
-	assert_eq!(compiled_contract_path, cache_dir.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR).join("test_nested_dir").join("test_valid_program_in_nested_dir.json"));
+	assert_eq!(
+		compiled_contract_path,
+		cache_dir
+			.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR)
+			.join("test_nested_dir")
+			.join("test_valid_program_in_nested_dir.json")
+	);
 }
 
 #[test]
@@ -204,4 +214,13 @@ fn get_compiled_contract_path_for_invalid_contract_extension() {
 	let contract_path = current_dir.join("test_no_extension");
 	let cache_path = get_compiled_contract_path(&contract_path, &current_dir);
 	assert_matches!(cache_path, Err(CacheError::InvalidContractExtension(_)));
+}
+
+#[test]
+fn get_compiled_contract_path_for_invalid_root_dir() {
+	let current_dir = std::env::current_dir().unwrap();
+	// incorrect rootdir
+	let contract_path = PathBuf::from("test_invalid_root_dir.cairo");
+	let cache_path = get_compiled_contract_path(&contract_path, &current_dir);
+	assert_matches!(cache_path, Err(CacheError::StripPrefixError(_)));
 }
