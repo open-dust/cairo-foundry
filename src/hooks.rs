@@ -41,12 +41,10 @@ pub fn pre_step_instruction(
 			})?;
 
 		if let Some(mocked_ret_value) = mocks_felt.get(&new_pc.offset) {
-			let pc = vm.get_pc().clone();
 			let ap = vm.get_ap();
 			vm.insert_value(&ap, mocked_ret_value)?;
 			let new_app = ap.add(1)?;
 			vm.set_ap(new_app.offset);
-			vm.set_pc(pc.add(2)?);
 			vm.skip_next_instruction_execution();
 		}
 
@@ -58,12 +56,10 @@ pub fn pre_step_instruction(
 			})?;
 
 		if let Some(mocked_value) = mocks.get(&new_pc.offset) {
-			let pc = vm.get_pc().clone();
 			let ap = vm.get_ap();
 			vm.insert_value(&ap, mocked_value)?;
 			let new_app = ap.add(1)?;
 			vm.set_ap(new_app.offset);
-			vm.set_pc(pc.add(2)?);
 			vm.skip_next_instruction_execution();
 		}
 	}
