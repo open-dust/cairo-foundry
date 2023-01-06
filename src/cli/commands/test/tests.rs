@@ -1,6 +1,8 @@
 use crate::cli::commands::{test::TestArgs, CommandExecution};
 use assert_matches::assert_matches;
 use cairo_rs::serde::deserialize_program::deserialize_program_json;
+use std::fs::File;
+use std::io::BufReader;
 use std::path::PathBuf;
 
 use super::{
@@ -15,13 +17,14 @@ pub fn run_single_test(
 	test_path: &PathBuf,
 ) -> Result<TestResult, TestCommandError> {
 	let (_, path_to_compiled, _) = compile_and_list_entrypoints(test_path.to_owned())?;
-
-	let program_json = deserialize_program_json(&path_to_compiled)?;
+	let file = File::open(&path_to_compiled).unwrap();
+	let reader = BufReader::new(file);
+	let program_json = deserialize_program_json(reader)?;
 
 	test_single_entrypoint(
 		program_json,
 		test_name.to_string(),
-		&setup_hint_processor(),
+		&mut setup_hint_processor(),
 		None,
 	)
 }
