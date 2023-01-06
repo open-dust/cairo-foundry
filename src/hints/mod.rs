@@ -18,10 +18,9 @@ lazy_static! {
 	///
 	/// Before test execution, an Uuid is associated for the test, test is executed
 	/// and `cairo_run` output is captured in the `HINT_OUTPUT_BUFFER`
-	/// # Examples
 	///
-	/// Basic usage:
-	/// ```
+	/// # Example:
+	/// ```ignore
 	///	let mut output = String::new();
 	/// let execution_uuid = Uuid::new_v4();
 	///	init_buffer(execution_uuid);
