@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::ops::Add;
+use std::{collections::HashMap, ops::Add};
 
 use cairo_rs::{
 	types::{exec_scope::ExecutionScopes, instruction::Opcode},
