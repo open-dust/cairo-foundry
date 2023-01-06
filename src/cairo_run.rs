@@ -31,12 +31,13 @@ use crate::{
 /// Each *test* functions will be executed by `cairo_run` with hooks and hints applied.
 pub fn cairo_run(
 	program: Program,
-	hint_processor: &dyn HintProcessor,
+	hint_processor: &mut dyn HintProcessor,
 	execution_uuid: Uuid,
 	opt_hooks: Option<Hooks>,
 ) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
-	let mut cairo_runner = CairoRunner::new(&program)?;
-	let mut vm = VirtualMachine::new(program.prime, false);
+	// 2023-01-06: FIXME: avoid hardcoded default layout & proof mode ?
+	let mut cairo_runner = CairoRunner::new(&program, "small", false)?;
+	let mut vm = VirtualMachine::new(program.prime, false, program.error_message_attributes);
 	let end = cairo_runner.initialize(&mut vm)?;
 
 	cairo_runner
@@ -62,6 +63,7 @@ pub fn cairo_run(
 	}
 	.map_err(CairoRunError::VirtualMachine)?;
 
+	cairo_runner.end_run(false, false, &mut vm, hint_processor)?;
 	vm.verify_auto_deductions().map_err(CairoRunError::VirtualMachine)?;
 
 	cairo_runner.relocate(&mut vm).map_err(CairoRunError::Trace)?;

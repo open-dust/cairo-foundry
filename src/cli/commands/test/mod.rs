@@ -18,10 +18,11 @@ use cairo_rs::{
 };
 use clap::{Args, ValueHint};
 use colored::Colorize;
-use rayon::prelude::*;
+// 2023-01-06: wwe can't execute parallel since HintFunc are reference counted
+// use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
-use std::{fmt::Display, fs, io, path::PathBuf, sync::Arc, time::Instant};
+use std::{fmt::Display, fs, io, path::PathBuf, rc::Rc, sync::Arc, time::Instant};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -160,9 +161,9 @@ impl Display for TestOutput {
 }
 
 fn setup_hint_processor() -> BuiltinHintProcessor {
-	let skip_hint = HintFunc(Box::new(hints::skip));
-	let mock_call_hint = HintFunc(Box::new(hints::mock_call));
-	let expect_revert_hint = HintFunc(Box::new(expect_revert));
+	let skip_hint = Rc::new(HintFunc(Box::new(hints::skip)));
+	let mock_call_hint = Rc::new(HintFunc(Box::new(hints::mock_call)));
+	let expect_revert_hint = Rc::new(HintFunc(Box::new(expect_revert)));
 	let mut hint_processor = BuiltinHintProcessor::new_empty();
 	hint_processor.add_hint(String::from("skip()"), skip_hint);
 	hint_processor.add_hint(String::from("expect_revert()"), expect_revert_hint);
@@ -237,7 +238,7 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 /// ```ignore
 /// //assuming your program have a "test_function1" and "test_function2" functions.
 ///
-/// let hint_processor = setup_hint_processor();
+/// let mut hint_processor = setup_hint_processor();
 /// let plain_path = PathBuf::from("path_to_your_program");
 /// let compiled_path = compile(&plain_path)?;
 /// let program = deserialize_program_json(&compiled_path)?;
@@ -248,7 +249,7 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 pub(crate) fn test_single_entrypoint(
 	program: ProgramJson,
 	test_entrypoint: String,
-	hint_processor: &BuiltinHintProcessor,
+	hint_processor: &mut BuiltinHintProcessor,
 	hooks: Option<Hooks>,
 ) -> Result<TestResult, TestCommandError> {
 	let start = Instant::now();
@@ -256,7 +257,7 @@ pub(crate) fn test_single_entrypoint(
 	let execution_uuid = Uuid::new_v4();
 	init_buffer(execution_uuid);
 
-	let program = Program::from_json(program, &test_entrypoint)?;
+	let program = Program::from_json(program, Some(&test_entrypoint))?;
 
 	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks);
 	let duration = start.elapsed();
@@ -325,7 +326,7 @@ pub(crate) fn test_single_entrypoint(
 /// ```ignore
 /// //assuming your program have a "test_function1" and "test_function2" functions.
 ///
-/// let hint_processor = setup_hint_processor();
+/// let mut hint_processor = setup_hint_processor();
 /// let plain_path = PathBuf::from("path_to_your_program");
 /// let compiled_path = compile(&plain_path)?;
 /// let hooks = setup_hooks();
@@ -334,13 +335,15 @@ pub(crate) fn test_single_entrypoint(
 /// "test_fuction2"), hooks);
 /// ```
 fn run_tests_for_one_file(
-	hint_processor: &BuiltinHintProcessor,
+	hint_processor: &mut BuiltinHintProcessor,
 	path_to_original: PathBuf,
 	path_to_compiled: PathBuf,
 	test_entrypoints: Vec<String>,
 	hooks: Hooks,
 ) -> Result<TestResult, TestCommandError> {
-	let program_json = deserialize_program_json(&path_to_compiled)?;
+	let file = fs::File::open(&path_to_compiled).unwrap();
+	let reader = io::BufReader::new(file);
+	let program_json = deserialize_program_json(reader)?;
 
 	let output = format!("Running tests in file {}\n", path_to_original.display());
 	let res = test_entrypoints
@@ -371,17 +374,18 @@ fn run_tests_for_one_file(
 impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 	fn exec(&self) -> Result<TestOutput, TestCommandError> {
 		// Declare hints
-		let hint_processor = setup_hint_processor();
+		let mut hint_processor = setup_hint_processor();
 		let hooks = setup_hooks();
 
 		list_cairo_files(&self.root)?
-			.into_par_iter()
+			//.into_par_iter()
+			.into_iter()
 			.map(compile_and_list_entrypoints)
 			.map(|res| -> Result<TestResult, TestCommandError> {
 				match res {
 					Ok((path_to_original, path_to_compiled, test_entrypoints)) =>
 						run_tests_for_one_file(
-							&hint_processor,
+							&mut hint_processor,
 							path_to_original,
 							path_to_compiled,
 							test_entrypoints,
