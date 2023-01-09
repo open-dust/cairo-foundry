@@ -287,7 +287,15 @@ pub(crate) fn test_single_entrypoint(
 			));
 			(None, TestStatus::FAILURE)
 		},
-		Err(e) => Err(TestCommandError::CairoRunError(e))?,
+		Err(e) => {
+			output.push_str(&format!(
+				"[{}] {}\nError: {:?}\n\n",
+				"FAILED".red(),
+				test_entrypoint,
+				e
+			));
+			(None, TestStatus::FAILURE)
+		},
 	};
 
 	purge_hint_buffer(&execution_uuid, &mut output);
