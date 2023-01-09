@@ -8,6 +8,18 @@ use cairo_rs::{
 };
 use num_bigint::BigInt;
 
+/// Skip a test
+/// You can use this hint to prepare tests for functionality that isn't completed yet.
+///
+/// Returns nothing
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```ignore
+/// %{ skip() %}
+/// ```
 pub fn skip(
 	_vm: &mut VirtualMachine,
 	_exec_scopes: &mut ExecutionScopes,
