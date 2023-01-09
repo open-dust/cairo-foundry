@@ -13,6 +13,19 @@ mod tests;
 
 pub const EXPECT_REVERT_FLAG: &str = "expect_revert";
 
+/// Expects an exception will be raised 
+/// If an exception is triggered the test will pass. If not, the test will fail.
+///
+/// Returns true if it succeeds, false if it failed
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```ignore
+/// %{ expect_revert() %}
+/// assert 2 = 3;
+/// ```
 pub fn expect_revert(
 	_vm: &mut VirtualMachine,
 	exec_scopes: &mut ExecutionScopes,
