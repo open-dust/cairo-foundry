@@ -8,7 +8,7 @@ use super::{
 	TestResult,
 };
 
-use crate::cli::commands::test::cache::cache::{
+use crate::cli::commands::test::cache::{
 	get_cache_path, get_compiled_contract_path, read_cache_file, Cache, CacheError,
 };
 
