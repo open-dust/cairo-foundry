@@ -52,3 +52,19 @@ pub fn pre_step_instruction(
 
 	Ok(())
 }
+
+/// Called after an instruction is executed by the virtual machine (VM).
+///
+/// This function is called after the VM have executed an instruction.
+/// The given `&mut VirtualMachine` allows the VM state to be modified
+/// according to given `&mut ExecutionScopes`.
+///
+/// When no error is encountered, returns an empty success value.
+/// Otherwise, returns a VirtualMachineError
+pub fn post_step_instruction(
+	_vm: &mut VirtualMachine,
+	_exec_scopes: &mut ExecutionScopes,
+	_constants: &HashMap<String, BigInt>,
+) -> Result<(), VirtualMachineError> {
+	Ok(())
+}

@@ -8,7 +8,7 @@ version     = "0.1.0"
 
 [dependencies]
 assert_matches = "1.5.0"
-cairo-rs = { git = "https://github.com/open-dust/cairo-rs", branch = "bug-state-cairo-foundry", features = [
+cairo-rs = { git = "https://github.com/open-dust/cairo-rs", branch = "cairo-foundry", features = [
 	"hooks",
 ] }
 clap = { version = "3.2.6", features = ["derive"], default-features = false }

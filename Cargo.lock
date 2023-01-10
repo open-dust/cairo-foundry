@@ -172,7 +172,7 @@ dependencies = [
 [[package]]
 name = "cairo-rs"
 version = "0.1.0"
-source = "git+https://github.com/open-dust/cairo-rs?branch=bug-state-cairo-foundry#cc4f7be0677f26ff6072b1431f17aa8169d4c9d0"
+source = "git+https://github.com/open-dust/cairo-rs?branch=cairo-foundry#d4c530bcd325bee2e6ea5a8bc82ec462c77dc9dd"
 dependencies = [
  "bincode",
  "clap",
@@ -739,7 +739,7 @@ checksum = "7b5bf27447411e9ee3ff51186bf7a08e16c341efdde93f4d823e8844429bed7e"
 [[package]]
 name = "parse-hyperlinks"
 version = "0.23.4"
-source = "git+https://github.com/open-dust/cairo-rs?branch=bug-state-cairo-foundry#cc4f7be0677f26ff6072b1431f17aa8169d4c9d0"
+source = "git+https://github.com/open-dust/cairo-rs?branch=cairo-foundry#d4c530bcd325bee2e6ea5a8bc82ec462c77dc9dd"
 dependencies = [
  "nom",
 ]
