@@ -26,8 +26,6 @@ pub enum CacheError {
 	StripPrefixError(#[from] std::path::StripPrefixError),
 }
 
-
-
 const CAIRO_FOUNDRY_CACHE_DIR: &str = "cairo-foundry-cache";
 const CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR: &str = "compiled-cairo-files";
 
@@ -36,9 +34,6 @@ pub fn read_cache_file(path: &PathBuf) -> Result<Cache, CacheError> {
 	let data = serde_json::from_str::<Cache>(file.as_str())?;
 	Ok(data)
 }
-	
-
-	
 
 fn is_valid_cairo_contract(contract_path: &PathBuf) -> Result<(), CacheError> {
 	let extension = contract_path
@@ -52,10 +47,7 @@ fn is_valid_cairo_contract(contract_path: &PathBuf) -> Result<(), CacheError> {
 	Ok(())
 }
 
-pub fn get_cache_path(
-	contract_path: &PathBuf,
-	root_dir: &PathBuf,
-) -> Result<PathBuf, CacheError> {
+pub fn get_cache_path(contract_path: &PathBuf, root_dir: &PathBuf) -> Result<PathBuf, CacheError> {
 	// check if contract_path have .cairo extension
 	is_valid_cairo_contract(contract_path)?;
 	let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
