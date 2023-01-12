@@ -2,7 +2,7 @@ pub mod cache;
 #[cfg(test)]
 pub mod tests;
 
-use crate::hints::{self, EXPECT_REVERT_FLAG};
+use crate::{hints::{self, EXPECT_REVERT_FLAG}, compile::Error};
 use regex::Regex;
 
 use cairo_rs::{
@@ -22,7 +22,7 @@ use colored::Colorize;
 // use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
-use std::{fmt::Display, fs, io, path::PathBuf, rc::Rc, sync::Arc, time::Instant};
+use std::{fmt::Display, fs, io, path::PathBuf, rc::Rc, sync::Arc, time::Instant, collections::HashMap};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -150,6 +150,108 @@ fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, TestCom
 	Ok(test_entrypoints)
 }
 
+/// structure used to store a Mocked function in a cairo test entrypoint
+/// fn_name: the name of the function to mock in the cairo file
+/// fn_args: the list of parameters to replace the mock function call
+#[derive(Debug,)]
+pub struct MockEntry<'a>{
+	fn_name: &'a str,
+	fn_args: &'a str,
+}
+
+/// subtype MockedFn store all the mocked functions in a single test entrypoint
+/// in a cairo file
+type MockedFn<'a> = HashMap< &'a str, Vec<MockEntry<'a>>>;
+
+/// Regex used to distinguish the beginning of a function  in a cairo file
+/// ```ignore
+/// func test_mock_call() {
+///     let mock_ret_value = 42;
+///     let func_to_mock = get_label_location(mocked_func);
+///     %{ mock_call(func_to_mock, [mock_ret_value]) %}
+///     %{ mock_call(name_of_my_func, [42, “shortstring”, ids.myVarName, Uint256 {high: 42, low: 0x0}]) %}
+///     let x = mocked_func();
+///     assert 42 = x;
+///     return ();
+///     }
+/// ```
+const FUNC_RX:&str = r"func\s+(?P<func_test_name>[\w]*)";
+
+/// Regex used to distinguish the beginning of a mock call in a cairo file
+/// ```ignore
+/// %{ mock_call(func_to_mock, [mock_ret_value]) %}
+/// ```
+const MOCK_RX:&str = r"%\{\s+mock_call\((?P<func_to_mock>.*),\s*(?P<mock_value>\[.*\])\)\s+%\}";
+
+/// compute the list of mocked functions in a text string
+/// Return a Result<MockedFn>
+///
+/// ``` ignore
+/// let cairo_test = "func test_mock_call() {
+///     let mock_ret_value = 42;
+///     let func_to_mock = get_label_location(mocked_func);
+///     %{ mock_call(func_to_mock, [mock_ret_value]) %}
+///     %{ mock_call(name_of_my_func, [42, “shortstring”, ids.myVarName, Uint256 {high: 42, low: 0x0}]) %}
+///     let x = mocked_func();
+///     assert 42 = x;
+///     return ();
+/// }";
+/// let res = extract_fname_mock_values(cairo_test).unwrap();
+/// assert_eq!(res["test_mock_call"].len(), 2);
+/// assert_eq!(res["test_mock_call"][0].fn_name, "func_to_mock");
+/// assert_eq!(res["test_mock_call"][0].fn_args, "[mock_ret_value]");
+/// ```
+fn extract_fname_mock_values(data: &str) -> Result<MockedFn, Error>{
+ 	let fun_regex: Regex = Regex::new(FUNC_RX).unwrap();
+	let mock_regex: Regex = Regex::new(MOCK_RX).unwrap();
+
+	let reg_caps = fun_regex.captures(data).unwrap();
+	let fn_name = reg_caps.name("func_test_name").unwrap().as_str();
+
+	let mut vec_mock =  Vec::new();
+	let mut res = MockedFn::new();
+
+	for cap in mock_regex.captures_iter(data) {
+		vec_mock.push( MockEntry{
+			fn_name: cap.name("func_to_mock").unwrap().as_str(),
+			fn_args: cap.name("mock_value").unwrap().as_str()
+		});
+	}
+	res.insert(fn_name,vec_mock);
+	Ok(res)
+}
+
+
+/// compute the list of all mocked functions for all functions
+/// in a cairo test file
+/// param path:&PathBuf the path to the cairo file
+/// Return a Result<()>
+///
+fn list_test_mock_call(path: &PathBuf) -> Result<(), TestCommandError> {
+ 	let fun_regex: Regex = Regex::new(FUNC_RX).unwrap();
+	let data = fs::read_to_string(path)?;
+
+	//prepare sections to parse, corresponding to functions body
+	let mut pos:Vec<usize> = fun_regex.find_iter(data.as_str())
+								.map(|x| x.start())
+								.collect();
+	// append the last line to parse entire file
+	if pos.len() > 0 {
+		pos.push(data.len());
+	}
+
+	//extract fname and mock values
+	let mut i = 0;
+	while i != pos.len()-1 {
+		match extract_fname_mock_values( &data[pos[i]..pos[i+1]]){
+			Ok(res) => {println!("{:?}", res);},
+			_ => {println!("FAILURE");}
+		}
+		i += 1;
+	}
+	Ok(())
+}
+
 /// Execute command output
 #[derive(Debug, Serialize, Default)]
 pub struct TestOutput(String);
@@ -218,6 +320,7 @@ fn compile_and_list_entrypoints(
 ) -> Result<(PathBuf, PathBuf, Vec<String>), TestCommandError> {
 	let path_to_compiled = compile(&path_to_code)?;
 	let entrypoints = list_test_entrypoints(&path_to_compiled)?;
+	list_test_mock_call(&path_to_code);
 	Ok((path_to_code, path_to_compiled, entrypoints))
 }
 
