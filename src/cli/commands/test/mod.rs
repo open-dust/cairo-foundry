@@ -2,7 +2,10 @@ pub mod cache;
 #[cfg(test)]
 pub mod tests;
 
-use crate::{hints::{self, EXPECT_REVERT_FLAG}, compile::Error};
+use crate::{
+	compile::Error,
+	hints::{self, EXPECT_REVERT_FLAG},
+};
 use regex::Regex;
 
 use cairo_rs::{
@@ -22,7 +25,9 @@ use colored::Colorize;
 // use rayon::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
-use std::{fmt::Display, fs, io, path::PathBuf, rc::Rc, sync::Arc, time::Instant, collections::HashMap};
+use std::{
+	collections::HashMap, fmt::Display, fs, io, path::PathBuf, rc::Rc, sync::Arc, time::Instant,
+};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -153,15 +158,15 @@ fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, TestCom
 /// structure used to store a Mocked function in a cairo test entrypoint
 /// fn_name: the name of the function to mock in the cairo file
 /// fn_args: the list of parameters to replace the mock function call
-#[derive(Debug,)]
-pub struct MockEntry<'a>{
+#[derive(Debug)]
+pub struct MockEntry<'a> {
 	fn_name: &'a str,
 	fn_args: &'a str,
 }
 
 /// subtype MockedFn store all the mocked functions in a single test entrypoint
 /// in a cairo file
-type MockedFn<'a> = HashMap< &'a str, Vec<MockEntry<'a>>>;
+type MockedFn<'a> = HashMap<&'a str, Vec<MockEntry<'a>>>;
 
 /// Regex used to distinguish the beginning of a function  in a cairo file
 /// ```ignore
@@ -175,13 +180,13 @@ type MockedFn<'a> = HashMap< &'a str, Vec<MockEntry<'a>>>;
 ///     return ();
 ///     }
 /// ```
-const FUNC_RX:&str = r"func\s+(?P<func_test_name>[\w]*)";
+const FUNC_RX: &str = r"func\s+(?P<func_test_name>[\w]*)";
 
 /// Regex used to distinguish the beginning of a mock call in a cairo file
 /// ```ignore
 /// %{ mock_call(func_to_mock, [mock_ret_value]) %}
 /// ```
-const MOCK_RX:&str = r"%\{\s+mock_call\((?P<func_to_mock>.*),\s*(?P<mock_value>\[.*\])\)\s+%\}";
+const MOCK_RX: &str = r"%\{\s+mock_call\((?P<func_to_mock>.*),\s*(?P<mock_value>\[.*\])\)\s+%\}";
 
 /// compute the list of mocked functions in a text string
 /// Return a Result<MockedFn>
@@ -201,40 +206,36 @@ const MOCK_RX:&str = r"%\{\s+mock_call\((?P<func_to_mock>.*),\s*(?P<mock_value>\
 /// assert_eq!(res["test_mock_call"][0].fn_name, "func_to_mock");
 /// assert_eq!(res["test_mock_call"][0].fn_args, "[mock_ret_value]");
 /// ```
-fn extract_fname_mock_values(data: &str) -> Result<MockedFn, Error>{
- 	let fun_regex: Regex = Regex::new(FUNC_RX).unwrap();
+fn extract_fname_mock_values(data: &str) -> Result<MockedFn, Error> {
+	let fun_regex: Regex = Regex::new(FUNC_RX).unwrap();
 	let mock_regex: Regex = Regex::new(MOCK_RX).unwrap();
 
 	let reg_caps = fun_regex.captures(data).unwrap();
 	let fn_name = reg_caps.name("func_test_name").unwrap().as_str();
 
-	let mut vec_mock =  Vec::new();
+	let mut vec_mock = Vec::new();
 	let mut res = MockedFn::new();
 
 	for cap in mock_regex.captures_iter(data) {
-		vec_mock.push( MockEntry{
+		vec_mock.push(MockEntry {
 			fn_name: cap.name("func_to_mock").unwrap().as_str(),
-			fn_args: cap.name("mock_value").unwrap().as_str()
+			fn_args: cap.name("mock_value").unwrap().as_str(),
 		});
 	}
-	res.insert(fn_name,vec_mock);
+	res.insert(fn_name, vec_mock);
 	Ok(res)
 }
-
 
 /// compute the list of all mocked functions for all functions
 /// in a cairo test file
 /// param path:&PathBuf the path to the cairo file
 /// Return a Result<()>
-///
 fn list_test_mock_call(path: &PathBuf) -> Result<(), TestCommandError> {
- 	let fun_regex: Regex = Regex::new(FUNC_RX).unwrap();
+	let fun_regex: Regex = Regex::new(FUNC_RX).unwrap();
 	let data = fs::read_to_string(path)?;
 
 	//prepare sections to parse, corresponding to functions body
-	let mut pos:Vec<usize> = fun_regex.find_iter(data.as_str())
-								.map(|x| x.start())
-								.collect();
+	let mut pos: Vec<usize> = fun_regex.find_iter(data.as_str()).map(|x| x.start()).collect();
 	// append the last line to parse entire file
 	if pos.len() > 0 {
 		pos.push(data.len());
@@ -242,10 +243,14 @@ fn list_test_mock_call(path: &PathBuf) -> Result<(), TestCommandError> {
 
 	//extract fname and mock values
 	let mut i = 0;
-	while i != pos.len()-1 {
-		match extract_fname_mock_values( &data[pos[i]..pos[i+1]]){
-			Ok(res) => {println!("{:?}", res);},
-			_ => {println!("FAILURE");}
+	while i != pos.len() - 1 {
+		match extract_fname_mock_values(&data[pos[i]..pos[i + 1]]) {
+			Ok(res) => {
+				println!("{:?}", res);
+			},
+			_ => {
+				println!("FAILURE");
+			},
 		}
 		i += 1;
 	}
