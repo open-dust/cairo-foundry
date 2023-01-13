@@ -16,7 +16,7 @@ pub const EXPECT_REVERT_FLAG: &str = "expect_revert";
 /// Expects an exception will be raised
 /// If an exception is triggered the test will pass. If not, the test will fail.
 ///
-/// Returns true if it succeeds, false if it failed
+/// Returns Result<(), VirtualMachineError>
 ///
 /// # Examples
 ///
