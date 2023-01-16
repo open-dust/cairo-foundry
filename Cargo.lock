@@ -95,6 +95,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
+name = "bigdecimal"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6aaf33151a6429fe9211d1b276eafdf70cdff28b071e76c0b0e1503221ea3744"
+dependencies = [
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -161,7 +172,7 @@ dependencies = [
 [[package]]
 name = "cairo-rs"
 version = "0.1.0"
-source = "git+https://github.com/onlydustxyz/cairo-rs?branch=cairo-foundry#c066cfac5f1f484841dd3abf5cb48b1e93a04b0e"
+source = "git+https://github.com/open-dust/cairo-rs?branch=cairo-foundry#d4c530bcd325bee2e6ea5a8bc82ec462c77dc9dd"
 dependencies = [
  "bincode",
  "clap",
@@ -175,6 +186,7 @@ dependencies = [
  "num-integer",
  "num-traits",
  "parse-hyperlinks",
+ "rand_core",
  "serde",
  "serde_bytes",
  "serde_json",
@@ -555,15 +567,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "html-escape"
-version = "0.2.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15315cfa9503e9aa85a477138eff76a1b203a430703548052c330b69d8d8c205"
-dependencies = [
- "utf8-width",
-]
-
-[[package]]
 name = "humantime"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -736,12 +739,9 @@ checksum = "7b5bf27447411e9ee3ff51186bf7a08e16c341efdde93f4d823e8844429bed7e"
 [[package]]
 name = "parse-hyperlinks"
 version = "0.23.4"
-source = "git+https://github.com/onlydustxyz/cairo-rs?branch=cairo-foundry#c066cfac5f1f484841dd3abf5cb48b1e93a04b0e"
+source = "git+https://github.com/open-dust/cairo-rs?branch=cairo-foundry#d4c530bcd325bee2e6ea5a8bc82ec462c77dc9dd"
 dependencies = [
- "html-escape",
  "nom",
- "percent-encoding",
- "thiserror",
 ]
 
 [[package]]
@@ -749,12 +749,6 @@ name = "paste"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1de2e551fb905ac83f73f7aedf2f0cb4a0da7e35efa24a202a936269f1f18e1"
-
-[[package]]
-name = "percent-encoding"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
 name = "pest"
@@ -1099,9 +1093,9 @@ dependencies = [
 
 [[package]]
 name = "starknet-crypto"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92d5ba05430fcd7c107ad9e4433bb3958722b13d97a44fd07a18dcf0eb6da667"
+checksum = "be7d6b2c959fde2a10dbc31d54bdd0307eecb7ef6c05c23a0263e65b57b3e18a"
 dependencies = [
  "crypto-bigint",
  "hex",
@@ -1111,21 +1105,45 @@ dependencies = [
  "num-traits",
  "rfc6979",
  "sha2 0.9.9",
+ "starknet-crypto-codegen",
+ "starknet-curve",
  "starknet-ff",
  "thiserror",
  "zeroize",
 ]
 
 [[package]]
-name = "starknet-ff"
+name = "starknet-crypto-codegen"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a80865f37a0dcd198f427356d939f1495144c26ed5123b1418ef33a63f82655"
+checksum = "6569d70430f0f6edc41f6820d00acf63356e6308046ca01e57eeac22ad258c47"
+dependencies = [
+ "starknet-curve",
+ "starknet-ff",
+ "syn",
+]
+
+[[package]]
+name = "starknet-curve"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84be6079d3060fdbd8b5335574fef3d3783fa2f7ee6474d08ae0c1e4b0a29ba4"
+dependencies = [
+ "starknet-ff",
+]
+
+[[package]]
+name = "starknet-ff"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5874510620214ebeac50915b01d67437d8ca10a6682b1de85b93cd01157b58eb"
 dependencies = [
  "ark-ff",
+ "bigdecimal",
  "crypto-bigint",
  "getrandom",
  "hex",
+ "num-bigint",
  "serde",
  "thiserror",
 ]
@@ -1223,12 +1241,6 @@ name = "unicode-xid"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
-
-[[package]]
-name = "utf8-width"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5190c9442dcdaf0ddd50f37420417d219ae5261bbf5db120d0f9bab996c9cba1"
 
 [[package]]
 name = "uuid"
