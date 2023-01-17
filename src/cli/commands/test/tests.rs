@@ -29,6 +29,7 @@ pub fn run_single_test(
 		test_name.to_string(),
 		&mut setup_hint_processor(),
 		None,
+		1000000,
 	)
 }
 

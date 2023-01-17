@@ -9,6 +9,7 @@ use num_bigint::BigInt;
 use crate::hints::MOCK_CALL_KEY;
 
 pub const HOOKS_VAR_NAME: &str = "hooks";
+pub const MAX_STEPS: &str = "max_steps";
 
 /// Called before an instruction is executed by the virtual machine (VM).
 ///
@@ -66,5 +67,8 @@ pub fn post_step_instruction(
 	_exec_scopes: &mut ExecutionScopes,
 	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
+	if _vm.get_current_step() > _exec_scopes.get(MAX_STEPS)? {
+		return Err(VirtualMachineError::WrongHintData);
+	}
 	Ok(())
 }

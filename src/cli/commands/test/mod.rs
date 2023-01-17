@@ -258,6 +258,7 @@ pub(crate) fn test_single_entrypoint(
 	test_entrypoint: String,
 	hint_processor: &mut BuiltinHintProcessor,
 	hooks: Option<Hooks>,
+	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
 	let start = Instant::now();
 	let mut output = String::new();
@@ -265,8 +266,7 @@ pub(crate) fn test_single_entrypoint(
 	init_buffer(execution_uuid);
 
 	let program = Program::from_json(program, Some(&test_entrypoint))?;
-
-	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks);
+	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks, max_steps);
 	let duration = start.elapsed();
 	let (opt_runner_and_output, test_success) = match res_cairo_run {
 		Ok(res) => {
@@ -356,6 +356,7 @@ fn run_tests_for_one_file(
 	path_to_compiled: PathBuf,
 	test_entrypoints: Vec<String>,
 	hooks: Hooks,
+	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
 	let file = fs::File::open(&path_to_compiled).unwrap();
 	let reader = io::BufReader::new(file);
@@ -370,6 +371,7 @@ fn run_tests_for_one_file(
 				test_entrypoint,
 				hint_processor,
 				Some(hooks.clone()),
+				max_steps,
 			)
 		})
 		.collect::<Result<Vec<_>, TestCommandError>>()?
@@ -406,6 +408,7 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 							path_to_compiled,
 							test_entrypoints,
 							hooks.clone(),
+							self.max_steps,
 						)
 					},
 					Err(err) => Err(err),
