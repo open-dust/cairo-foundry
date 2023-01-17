@@ -20,11 +20,13 @@ pub const EXPECT_REVERT_FLAG: &str = "expect_revert";
 ///
 /// # Examples
 ///
-/// Basic usage:
+/// Basic usage in a `.cairo` file:
 ///
-/// ```ignore
-/// %{ expect_revert() %}
-/// assert 2 = 3;
+/// ```cairo
+/// func test_that_should_revert() {
+/// 	%{ expect_revert() %}
+/// 	assert 2 = 3;
+/// }
 /// ```
 pub fn expect_revert(
 	_vm: &mut VirtualMachine,

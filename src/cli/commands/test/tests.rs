@@ -24,12 +24,7 @@ pub fn run_single_test(
 	let reader = BufReader::new(file);
 	let program_json = deserialize_program_json(reader)?;
 
-	test_single_entrypoint(
-		program_json,
-		test_name.to_string(),
-		&mut setup_hint_processor(),
-		None,
-	)
+	test_single_entrypoint(program_json, test_name, &mut setup_hint_processor(), None)
 }
 
 #[test]
