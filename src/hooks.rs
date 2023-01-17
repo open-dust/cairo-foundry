@@ -33,7 +33,6 @@ pub fn pre_step_instruction(
 			vm.compute_operands(&instruction)?;
 
 		let new_pc = vm.compute_new_pc(&instruction, &operands)?;
-
 		let mocks = exec_scopes
 			.get_any_boxed_mut(MOCK_CALL_KEY)?
 			.downcast_mut::<HashMap<usize, BigInt>>()
@@ -67,8 +66,9 @@ pub fn post_step_instruction(
 	_exec_scopes: &mut ExecutionScopes,
 	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
-	if _vm.get_current_step() > _exec_scopes.get(MAX_STEPS)? {
+	if *_vm.get_current_step() > _exec_scopes.get::<u64>(MAX_STEPS)? as usize {
 		return Err(VirtualMachineError::WrongHintData);
 	}
+
 	Ok(())
 }
