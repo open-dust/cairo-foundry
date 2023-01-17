@@ -54,10 +54,9 @@ pub fn get_cache_path(contract_path: &PathBuf, root_dir: &PathBuf) -> Result<Pat
 	// get relative dir path from root_dir
 	let contract_relative_path = contract_path.strip_prefix(root_dir)?;
 
-	let mut cache_path =
-		PathBuf::from(cache_dir.join(CAIRO_FOUNDRY_CACHE_DIR).join(contract_relative_path));
+	let mut cache_path = cache_dir.join(CAIRO_FOUNDRY_CACHE_DIR).join(contract_relative_path);
 	cache_path.set_extension("json");
-	return Ok(cache_path)
+	Ok(cache_path)
 }
 
 pub fn get_compiled_contract_path(
@@ -68,9 +67,8 @@ pub fn get_compiled_contract_path(
 	is_valid_cairo_contract(contract_path)?;
 	let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
 	let contract_relative_path = contract_path.strip_prefix(root_dir)?;
-	let mut compiled_contract_path = PathBuf::from(
-		cache_dir.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR).join(contract_relative_path),
-	);
+	let mut compiled_contract_path =
+		cache_dir.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR).join(contract_relative_path);
 	compiled_contract_path.set_extension("json");
-	return Ok(compiled_contract_path)
+	Ok(compiled_contract_path)
 }

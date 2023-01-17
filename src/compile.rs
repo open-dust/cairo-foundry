@@ -48,8 +48,8 @@ pub enum Error {
 /// # use std::path::PathBuf;
 /// # use cairo_foundry::compile::{compile, Error};
 /// # fn foo() -> Result<(), Error> {
-/// 	let mut program = PathBuf::from("path_to_your_program");
-/// 	let compiled_program_path = compile(&program)?;
+///     let mut program = PathBuf::from("path_to_your_program");
+///     let compiled_program_path = compile(&program)?;
 /// # Ok(())
 /// # }
 /// ```

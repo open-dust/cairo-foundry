@@ -19,7 +19,7 @@ use num_bigint::BigInt;
 ///
 /// ```cairo
 /// func test_to_be_implemented_later() {
-/// 	%{ skip() %}
+///     %{ skip() %}
 /// }
 /// ```
 pub fn skip(

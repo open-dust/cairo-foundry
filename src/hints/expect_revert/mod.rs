@@ -24,8 +24,8 @@ pub const EXPECT_REVERT_FLAG: &str = "expect_revert";
 ///
 /// ```cairo
 /// func test_that_should_revert() {
-/// 	%{ expect_revert() %}
-/// 	assert 2 = 3;
+///     %{ expect_revert() %}
+///     assert 2 = 3;
 /// }
 /// ```
 pub fn expect_revert(
