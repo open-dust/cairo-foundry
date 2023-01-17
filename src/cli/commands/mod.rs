@@ -10,6 +10,8 @@ mod list;
 pub mod test;
 
 #[derive(Error, Debug)]
+// Todo: Think about a better way to bubble up the errors
+#[allow(clippy::large_enum_variant)]
 pub enum CommandError {
 	#[error(transparent)]
 	ListCommandError(#[from] list::ListCommandError),
