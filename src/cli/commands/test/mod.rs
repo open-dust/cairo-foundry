@@ -42,19 +42,19 @@ use crate::{
 #[derive(Error, Debug)]
 pub enum TestCommandError {
 	#[error("Failed to list test entrypoints for file {0}: {1}")]
-	ListEntrypointsError(PathBuf, String),
+	ListEntrypoints(PathBuf, String),
 	#[error("Failed to compile file {0}: {1}")]
-	RunTestError(String, PathBuf, String),
+	RunTest(String, PathBuf, String),
 	#[error(transparent)]
-	IOError(#[from] io::Error),
+	IO(#[from] io::Error),
 	#[error(transparent)]
-	JsonError(#[from] serde_json::Error),
+	JsonDeSerialization(#[from] serde_json::Error),
 	#[error(transparent)]
-	CompileError(#[from] compile::Error),
+	Compile(#[from] compile::Error),
 	#[error(transparent)]
-	ProgramError(#[from] program_errors::ProgramError),
+	Program(#[from] program_errors::ProgramError),
 	#[error(transparent)]
-	CairoRunError(#[from] CairoRunError),
+	CairoRun(#[from] CairoRunError),
 	#[error(transparent)]
 	ListTests(#[from] ListTestsError),
 }
