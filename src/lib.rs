@@ -5,3 +5,4 @@ pub mod cli;
 pub mod compile;
 pub mod hints;
 pub mod hooks;
+pub mod io;
