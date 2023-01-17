@@ -2,7 +2,10 @@ pub mod cache;
 #[cfg(test)]
 pub mod tests;
 
-use crate::hints::{self, EXPECT_REVERT_FLAG};
+use crate::{
+	hints::{self, EXPECT_REVERT_FLAG},
+	io::{list_tests, ListTestsError},
+};
 use regex::Regex;
 
 use cairo_rs::{
@@ -26,10 +29,7 @@ use std::{fmt::Display, fs, io, path::PathBuf, rc::Rc, sync::Arc, time::Instant}
 use thiserror::Error;
 use uuid::Uuid;
 
-use super::{
-	list::{path_is_valid_directory, ListArgs, ListCommandError, ListOutput},
-	CommandExecution,
-};
+use super::{list::path_is_valid_directory, CommandExecution};
 
 use crate::{
 	cairo_run::cairo_run,
@@ -56,7 +56,7 @@ pub enum TestCommandError {
 	#[error(transparent)]
 	CairoRunError(#[from] CairoRunError),
 	#[error(transparent)]
-	ListCommandError(#[from] ListCommandError),
+	ListTests(#[from] ListTestsError),
 }
 
 /// Structure containing the path to a cairo directory.
@@ -168,17 +168,6 @@ fn setup_hooks() -> Hooks {
 		Arc::new(hooks::pre_step_instruction),
 		Arc::new(hooks::post_step_instruction),
 	)
-}
-
-/// List the cairo files contained in a directory.
-/// Takes a path to a directory, and return a list of exact path to all cairo files contained into
-/// this directory.
-fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, ListCommandError> {
-	ListArgs {
-		root: PathBuf::from(root),
-	}
-	.exec()
-	.map(|cmd_output: ListOutput| cmd_output.files)
 }
 
 /// Compile a cairo file, returning a truple
@@ -327,7 +316,7 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 		let mut hint_processor = setup_hint_processor();
 		let hooks = setup_hooks();
 
-		list_cairo_files(&self.root)?
+		list_tests(&self.root)?
 			//.into_par_iter()
 			.into_iter()
 			.map(compile_and_list_entrypoints)
