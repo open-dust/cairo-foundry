@@ -31,13 +31,3 @@ func get_balance{
     return (res=res);
 }
 
-// Infinite loop
-@view
-func infinite_loop{
-    syscall_ptr: felt*,
-    pedersen_ptr: HashBuiltin*,
-    range_check_ptr,
-}() {
-    infinite_loop();
-    return();
-}

@@ -94,3 +94,11 @@ func test_array_sum_negative{output_ptr: felt*}() {
 
     return ();
 }
+
+// Infinite loop
+func test_infinite_loop{
+    output_ptr: felt*
+}() {
+    test_infinite_loop();
+    return();
+}
