@@ -20,15 +20,19 @@ lazy_static! {
 	/// and `cairo_run` output is captured in the `HINT_OUTPUT_BUFFER`
 	///
 	/// # Example:
-	/// ```ignore
-	///	let mut output = String::new();
+	/// ```
+	/// # use uuid::Uuid;
+	/// # use cairo_foundry::hints::{clear_buffer, get_buffer, init_buffer, write_to_output_buffer};
+	///
 	/// let execution_uuid = Uuid::new_v4();
 	///	init_buffer(execution_uuid);
+	///
 	/// write_to_output_buffer(&execution_uuid, "foo");
 	/// let buffer = get_buffer(&execution_uuid).unwrap();
 	/// assert_eq!(buffer, "foo");
+	///
 	/// clear_buffer(&execution_uuid);
-	/// let buffer = get_buffer(&execution_uuid).unwrap();
+	/// let buffer = get_buffer(&execution_uuid);
 	/// assert_eq!(buffer, None);
 	/// ```
 	static ref HINT_OUTPUT_BUFFER: RwLock<HashMap<Uuid, String>> = RwLock::new(HashMap::new());
@@ -62,7 +66,7 @@ pub fn get_buffer(execution_uuid: &Uuid) -> Option<String> {
 ///
 /// The given `execution_uuid` is the one used to identify the cairo test entrypoint
 #[allow(dead_code)]
-fn write_to_output_buffer(execution_uuid: &Uuid, data: &str) {
+pub fn write_to_output_buffer(execution_uuid: &Uuid, data: &str) {
 	let mut hashmap_lock = HINT_OUTPUT_BUFFER.write().unwrap();
 	let opt_buffer = hashmap_lock.get_mut(execution_uuid);
 	if let Some(buffer) = opt_buffer {

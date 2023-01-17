@@ -104,23 +104,6 @@ impl From<(String, TestStatus)> for TestResult {
 /// The function will return a list of test entrypoint as `String` (ie: "test_function");
 ///
 /// return a vector of entrypoints
-///
-/// # Examples
-///
-/// Basic usage:
-///
-/// ```ignore
-/// //assuming your program have a "test_function1" and "test_function2" functions.
-///
-/// let plain_path = PathBuf::from("path_to_your_program");
-/// let compiled_path = compile(&plain_path)?;
-/// let expected_entrypoints = vec![
-/// "test_function1",
-/// "test_function2"
-/// ]
-///
-/// assert_eq!(list_test_entrypoints(compiled_path), expected_entrypoints);
-/// ```
 fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, TestCommandError> {
 	let re = Regex::new(r"__main__.(test_\w+)$").expect("Should be a valid regex");
 	let data = fs::read_to_string(compiled_path)?;
@@ -160,6 +143,7 @@ impl Display for TestOutput {
 	}
 }
 
+/// Create, setup and return a HintProcessor supporting our custom hints
 fn setup_hint_processor() -> BuiltinHintProcessor {
 	let skip_hint = Rc::new(HintFunc(Box::new(hints::skip)));
 	let mock_call_hint = Rc::new(HintFunc(Box::new(hints::mock_call)));
@@ -174,7 +158,7 @@ fn setup_hint_processor() -> BuiltinHintProcessor {
 	hint_processor
 }
 
-///create a new ``Hooks`` object, with the followings hooks:
+/// Create a new ``Hooks`` object, with the followings hooks:
 /// - pre_step_instruction
 /// - post_step_instruction
 ///
@@ -197,22 +181,8 @@ fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, ListCommandError> {
 	.map(|cmd_output: ListOutput| cmd_output.files)
 }
 
-/// compile a cairo file, returning a truple
+/// Compile a cairo file, returning a truple
 /// (path_to_original_code, path_to_compiled_code, entrypoints)
-/// # Examples
-///
-/// Basic usage:
-///
-/// ```ignore
-/// let plain_path = PathBuf::from("path_to_your_program");
-/// let compiled_path = compile(&plain_path);
-/// let entrypoints = list_test_entrypoints(compiled_path);
-///
-/// assert_eq!(
-/// compile_and_list_entrypoints(plain_path),
-/// (plain_path, compiled_path, entrypoints)
-/// )
-/// ```
 fn compile_and_list_entrypoints(
 	path_to_code: PathBuf,
 ) -> Result<(PathBuf, PathBuf, Vec<String>), TestCommandError> {
@@ -231,28 +201,12 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 }
 
 /// Execute a single test.
-/// this function will take a program and an entrypoint name, will search for this entrypoint and
-/// execute the selected test.
+/// Take a program and a test name as input, search for this entrypoint in the compiled file
+/// and execute it.
 /// It will then return a TestResult, representing the output of the test.
-///
-/// # Examples
-///
-/// Basic usage:
-///
-/// ```ignore
-/// //assuming your program have a "test_function1" and "test_function2" functions.
-///
-/// let mut hint_processor = setup_hint_processor();
-/// let plain_path = PathBuf::from("path_to_your_program");
-/// let compiled_path = compile(&plain_path)?;
-/// let program = deserialize_program_json(&compiled_path)?;
-///
-/// test_single_entrypoint(program, "test_function1", hint_processor, None);
-/// test_single_entrypoint(program, "test_function2", hint_processor, None);
-/// ```
-pub(crate) fn test_single_entrypoint(
+fn test_single_entrypoint(
 	program: ProgramJson,
-	test_entrypoint: String,
+	test_entrypoint: &str,
 	hint_processor: &mut BuiltinHintProcessor,
 	hooks: Option<Hooks>,
 ) -> Result<TestResult, TestCommandError> {
@@ -261,7 +215,7 @@ pub(crate) fn test_single_entrypoint(
 	let execution_uuid = Uuid::new_v4();
 	init_buffer(execution_uuid);
 
-	let program = Program::from_json(program, Some(&test_entrypoint))?;
+	let program = Program::from_json(program, Some(test_entrypoint))?;
 
 	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks);
 	let duration = start.elapsed();
@@ -330,22 +284,6 @@ pub(crate) fn test_single_entrypoint(
 /// each entrypoint provided.
 /// It will then return a TestResult corresponding to all the tests (SUCCESS if all the test
 /// succeded, FAILURE otherwise).
-///
-/// # Examples
-///
-/// Basic usage:
-///
-/// ```ignore
-/// //assuming your program have a "test_function1" and "test_function2" functions.
-///
-/// let mut hint_processor = setup_hint_processor();
-/// let plain_path = PathBuf::from("path_to_your_program");
-/// let compiled_path = compile(&plain_path)?;
-/// let hooks = setup_hooks();
-///
-/// run_test_for_one_file(hint_processor, plain_path, compiled_path, vec!("test_function1",
-/// "test_fuction2"), hooks);
-/// ```
 fn run_tests_for_one_file(
 	hint_processor: &mut BuiltinHintProcessor,
 	path_to_original: PathBuf,
@@ -363,7 +301,7 @@ fn run_tests_for_one_file(
 		.map(|test_entrypoint| {
 			test_single_entrypoint(
 				program_json.clone(),
-				test_entrypoint,
+				&test_entrypoint,
 				hint_processor,
 				Some(hooks.clone()),
 			)
