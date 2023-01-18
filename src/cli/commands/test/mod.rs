@@ -222,7 +222,7 @@ fn run_tests_for_one_file(
 	test_entrypoints: Vec<String>,
 	hooks: Hooks,
 ) -> Result<TestResult, TestCommandError> {
-	let file = fs::File::open(&path_to_compiled).unwrap();
+	let file = fs::File::open(path_to_compiled).unwrap();
 	let reader = io::BufReader::new(file);
 	let program_json = deserialize_program_json(reader)?;
 
