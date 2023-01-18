@@ -8,7 +8,7 @@ use log::info;
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::io::{list_tests, ListTestsError};
+use crate::io::test_files::{list_test_files, ListTestsFilesError};
 
 use super::CommandExecution;
 
@@ -23,7 +23,7 @@ pub struct ListArgs {
 #[derive(Error, Debug)]
 pub enum ListCommandError {
 	#[error(transparent)]
-	ListFilesError(#[from] ListTestsError),
+	ListFilesError(#[from] ListTestsFilesError),
 }
 
 /// Function used to validate directory type of the specified Path
@@ -79,11 +79,10 @@ impl CommandExecution<ListOutput, ListCommandError> for ListArgs {
 	/// Returns a `ListOutput` struct with all valid tests files in the `.files: vector<PathBuf>`
 	/// or an error `ListCommandError`, the first Error encoutered during the
 	/// processing of the root directory.
-
 	fn exec(&self) -> Result<ListOutput, ListCommandError> {
 		info!("Listing files within directory {:?}", self.root);
 
-		let tests_list = list_tests(&self.root)?;
+		let tests_list = list_test_files(&self.root)?;
 
 		Ok(ListOutput { files: tests_list })
 	}
