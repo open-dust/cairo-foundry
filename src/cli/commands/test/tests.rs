@@ -21,6 +21,7 @@ pub fn run_single_test(
 		test_name,
 		&mut setup_hint_processor(),
 		Some(setup_hooks()),
+		1000000,
 	)
 }
 

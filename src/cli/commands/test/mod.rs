@@ -150,6 +150,8 @@ fn test_single_entrypoint(
 	let execution_uuid = Uuid::new_v4();
 	init_buffer(execution_uuid);
 
+	let program = Program::from_json(program, Some(test_entrypoint))?;
+
 	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks, max_steps);
 	let duration = start.elapsed();
 	let (opt_runner_and_output, test_success) = match res_cairo_run {
