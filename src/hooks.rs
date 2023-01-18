@@ -41,7 +41,7 @@ pub fn pre_step_instruction(
 			})?;
 
 		if let Some(mocked_ret_value) = mocks.get(&new_pc.offset) {
-			let pc = vm.get_pc().clone();
+			let pc = *vm.get_pc();
 			let ap = vm.get_ap();
 			vm.insert_value(&ap, mocked_ret_value)?;
 			vm.set_pc(pc.add(2));

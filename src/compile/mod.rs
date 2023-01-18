@@ -44,9 +44,14 @@ pub enum Error {
 ///
 /// Basic usage:
 ///
-/// ```ignore
-/// let mut program = PathBuf::from("path_to_your_program");
-/// let compiled_program_path = compile(&program)?;
+/// ```no_run
+/// # use std::path::PathBuf;
+/// # use cairo_foundry::compile::{compile, Error};
+/// # fn foo() -> Result<(), Error> {
+///     let mut program = PathBuf::from("path_to_your_program");
+///     let compiled_program_path = compile(&program)?;
+/// # Ok(())
+/// # }
 /// ```
 pub fn compile(path_to_cairo_file: &PathBuf) -> Result<PathBuf, Error> {
 	let path_to_cairo_compiler = which(CAIRO_COMPILE_BINARY)?;

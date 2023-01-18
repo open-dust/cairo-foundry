@@ -15,8 +15,8 @@ use num_bigint::BigInt;
 use uuid::Uuid;
 
 use crate::{
-	hints::{EXECUTION_UUID_VAR_NAME, EXPECT_REVERT_FLAG, MOCK_CALL_KEY},
 	hooks::{HOOKS_VAR_NAME, MAX_STEPS},
+	hints::{output_buffer::EXECUTION_UUID_VAR_NAME, EXPECT_REVERT_FLAG, MOCK_CALL_KEY},
 };
 
 /// Execute a cairo program
