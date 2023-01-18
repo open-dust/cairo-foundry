@@ -68,7 +68,7 @@ pub struct TestArgs {
 	pub root: PathBuf,
 	/// Max steps cap allowed in a test
 	#[clap(short, long, default_value_t = 1000000)]
-	pub max_steps: u64,
+	pub max_step: u64,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -143,7 +143,7 @@ fn test_single_entrypoint(
 	test_entrypoint: &str,
 	hint_processor: &mut BuiltinHintProcessor,
 	hooks: Option<Hooks>,
-	max_steps: u64,
+	max_step: u64,
 ) -> Result<TestResult, TestCommandError> {
 	let start = Instant::now();
 	let mut output = String::new();
@@ -152,7 +152,7 @@ fn test_single_entrypoint(
 
 	let program = Program::from_json(program, Some(test_entrypoint))?;
 
-	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks, max_steps);
+	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks, max_step);
 	let duration = start.elapsed();
 	let (opt_runner_and_output, test_success) = match res_cairo_run {
 		Ok(res) => {
@@ -226,7 +226,7 @@ fn run_tests_for_one_file(
 	path_to_compiled: PathBuf,
 	test_entrypoints: Vec<String>,
 	hooks: Hooks,
-	max_steps: u64,
+	max_step: u64,
 ) -> Result<TestResult, TestCommandError> {
 	let file = fs::File::open(path_to_compiled).unwrap();
 	let reader = io::BufReader::new(file);
@@ -241,7 +241,7 @@ fn run_tests_for_one_file(
 				&test_entrypoint,
 				hint_processor,
 				Some(hooks.clone()),
-				max_steps,
+				max_step,
 			)
 		})
 		.collect::<Result<Vec<_>, TestCommandError>>()?
@@ -278,7 +278,7 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 							path_to_compiled,
 							test_entrypoints,
 							hooks.clone(),
-							self.max_steps,
+							self.max_step,
 						)
 					},
 					Err(err) => Err(err),
