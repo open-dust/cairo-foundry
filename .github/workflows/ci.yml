@@ -30,3 +30,23 @@ jobs:
           override: true
       - name: Check code format
         run: cargo +nightly fmt -- --check
+      - name: Check clippy
+        run: cargo +nightly fmt -- --check
+  lint:
+    name: Clippy checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+          override: true
+
+      - name: Annotate commit with clippy warnings
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --bins --tests --examples -- -D warnings
