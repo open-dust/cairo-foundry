@@ -67,8 +67,9 @@ pub fn post_step_instruction(
 	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
 	if *_vm.get_current_step() > _exec_scopes.get::<u64>(MAX_STEPS)? as usize {
+		// TODO: find a better way to express custom errors
 		return Err(VirtualMachineError::CustomHint(
-			"max_step reached".to_string(),
+			"max_step reached: ".to_string(),
 		));
 	}
 

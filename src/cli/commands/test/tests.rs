@@ -37,7 +37,7 @@ pub fn run_single_test(
 fn test_cairo_contracts() {
 	TestArgs {
 		root: PathBuf::from("./test_cairo_contracts"),
-		max_steps: 1000000,
+		max_steps: 100000,
 	}
 	.exec()
 	.unwrap();

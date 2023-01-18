@@ -96,9 +96,9 @@ func test_array_sum_negative{output_ptr: felt*}() {
 }
 
 // Infinite loop
-func test_infinite_loop_should_fail{
+func test_infinite_loop_failing_test{
     output_ptr: felt*
 }() {
-    test_infinite_loop_should_fail();
+    test_infinite_loop_failing_test();
     return();
 }
