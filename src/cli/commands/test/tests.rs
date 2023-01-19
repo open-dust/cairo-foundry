@@ -21,6 +21,7 @@ pub fn run_single_test(
 		test_name,
 		&mut setup_hint_processor(),
 		Some(setup_hooks()),
+		1000000
 	)
 }
 
@@ -28,6 +29,7 @@ pub fn run_single_test(
 fn test_cairo_contracts() {
 	TestArgs {
 		root: PathBuf::from("./test_cairo_contracts"),
+		max_steps: 1000000,
 	}
 	.exec()
 	.unwrap();
