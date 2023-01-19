@@ -11,3 +11,6 @@ venv
 # Added by cargo
 
 /target
+
+#IDE workspace settings
+.vscode/settings.json
