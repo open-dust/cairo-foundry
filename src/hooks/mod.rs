@@ -32,7 +32,7 @@ pub fn pre_step_instruction(
 ) -> Result<(), VirtualMachineError> {
 	let instruction = vm.decode_current_instruction()?;
 
-	ensure_max_steps_not_reached(vm, exec_scopes, _constants)?;
+	ensure_max_steps_not_reached(vm, exec_scopes)?;
 
 	if instruction.opcode == Opcode::Call {
 		let (operands, _operands_mem_addresses, _deduced_operands) =
@@ -79,7 +79,6 @@ pub fn post_step_instruction(
 pub fn ensure_max_steps_not_reached(
 	vm: &mut VirtualMachine,
 	exec_scopes: &mut ExecutionScopes,
-	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
 	if *vm.get_current_step() >= exec_scopes.get::<u64>(MAX_STEPS_VAR_NAME)? as usize {
 		// TODO: find a better way to express custom errors

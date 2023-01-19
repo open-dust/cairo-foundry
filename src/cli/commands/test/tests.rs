@@ -10,6 +10,7 @@ use super::{
 pub fn run_single_test(
 	test_name: &str,
 	test_path: &PathBuf,
+	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
 	let (_, path_to_compiled, _) = compile_and_list_entrypoints(test_path.to_owned())?;
 	let file = File::open(path_to_compiled).unwrap();
@@ -21,7 +22,7 @@ pub fn run_single_test(
 		test_name,
 		&mut setup_hint_processor(),
 		Some(setup_hooks()),
-		1000000
+		max_steps,
 	)
 }
 

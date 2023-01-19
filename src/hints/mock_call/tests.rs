@@ -12,7 +12,7 @@ fn mock_call(
 	#[case] expected_success: TestStatus,
 ) -> Result<(), TestCommandError> {
 	let path = std::path::PathBuf::from(path);
-	let result = run_single_test("test_mock_call", &path).expect("Should be Ok").success;
+	let result = run_single_test("test_mock_call", &path, 1000000).expect("Should be Ok").success;
 	assert_eq!(expected_success, result);
 	Ok(())
 }
