@@ -1,13 +1,20 @@
-use std::path::PathBuf;
+use rstest::rstest;
 
-use crate::cli::commands::{test::TestArgs, CommandExecution};
+use crate::cli::commands::test::{tests::run_single_test, TestCommandError, TestStatus};
 
-#[test]
-fn test_infinite_loop() {
-	TestArgs {
-		root: PathBuf::from("./test_cairo_contracts"),
-		max_steps: 10000,
-	}
-	.exec()
-	.unwrap();
+#[rstest]
+#[case(
+	"src/hooks/test_cairo_programs/infinite_loop.cairo",
+	TestStatus::SUCCESS
+)]
+fn test_infinite_loop(
+	#[case] path: &str,
+	#[case] expected_success: TestStatus,
+) -> Result<(), TestCommandError> {
+	let path = std::path::PathBuf::from(path);
+	let result = run_single_test("test_infinite_loop_failing_test", &path, 1000)
+		.expect("Should be Ok")
+		.success;
+	assert_eq!(expected_success, result);
+	Ok(())
 }
