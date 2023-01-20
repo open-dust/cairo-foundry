@@ -15,6 +15,19 @@ pub enum ListTestsFilesError {
 	WalkDir(String, #[source] walkdir::Error),
 }
 
+/// List all cairo test files
+///
+/// The given `&Path` will be walked through to find all cairo test files
+/// according to `TEST_FILE_REGEX` (`r"^test_.*\.cairo$"`)
+///
+/// Returns a vector of all test files found
+///
+/// # Examples
+/// ```ignore
+/// for path in list_test_files(std::path::Path::new("."))? {
+///     assert_eq!(path.to_str().unwrap().ends_with(".cairo"), true)
+/// }
+/// ```
 pub fn list_test_files(root: &Path) -> Result<Vec<PathBuf>, ListTestsFilesError> {
 	let mut test_files = WalkDir::new(root)
 		.into_iter()
