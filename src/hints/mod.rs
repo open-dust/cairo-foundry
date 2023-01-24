@@ -7,5 +7,6 @@ pub use expect_revert::{expect_revert, EXPECT_REVERT_FLAG};
 mod skip;
 pub use skip::*;
 
+pub mod hint_processor;
 pub mod output_buffer;
 pub mod processor;
