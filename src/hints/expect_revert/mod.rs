@@ -34,7 +34,7 @@ pub fn expect_revert(
 	_ids_data: &HashMap<String, HintReference>,
 	_ap_tracking: &ApTracking,
 	_constants: &HashMap<String, BigInt>,
-	_args: &Vec<String>
+	_args: &Vec<String>,
 ) -> Result<(), VirtualMachineError> {
 	exec_scopes.assign_or_update_variable(EXPECT_REVERT_FLAG, Box::new(true));
 	Ok(())

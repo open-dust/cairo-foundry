@@ -1,1 +1,1 @@
-pub mod regex_hint_processor;
+pub mod function_like_hint_processor;
