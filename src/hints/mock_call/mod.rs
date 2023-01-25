@@ -22,7 +22,7 @@ pub fn mock_call(
 	ids_data: &HashMap<String, HintReference>,
 	ap_tracking: &ApTracking,
 	_constants: &HashMap<String, BigInt>,
-	_args: &Vec<String>
+	_args: &Vec<String>,
 ) -> Result<(), VirtualMachineError> {
 	let func_to_mock = get_ptr_from_var_name("func_to_mock", vm, ids_data, ap_tracking)?;
 	let mock_ret_value = get_integer_from_var_name("mock_ret_value", vm, ids_data, ap_tracking)?;

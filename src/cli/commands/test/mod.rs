@@ -22,7 +22,7 @@ use crate::{
 	cairo_run::cairo_run,
 	compile::{self, compile},
 	hints::{
-		hint_processor::regex_hint_processor::RegexHintProcessor,
+		hint_processor::function_like_hint_processor::FunctionLikeHintProcessor,
 		output_buffer::{clear_buffer, get_buffer, init_buffer},
 		processor::setup_hint_processor,
 		EXPECT_REVERT_FLAG,
@@ -140,7 +140,7 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 fn test_single_entrypoint(
 	program: ProgramJson,
 	test_entrypoint: &str,
-	hint_processor: &mut RegexHintProcessor,
+	hint_processor: &mut FunctionLikeHintProcessor,
 	hooks: Option<Hooks>,
 	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
@@ -219,7 +219,7 @@ fn test_single_entrypoint(
 /// It will then return a TestResult corresponding to all the tests (SUCCESS if all the test
 /// succeded, FAILURE otherwise).
 fn run_tests_for_one_file(
-	hint_processor: &mut RegexHintProcessor,
+	hint_processor: &mut FunctionLikeHintProcessor,
 	path_to_original: PathBuf,
 	path_to_compiled: PathBuf,
 	test_entrypoints: Vec<String>,
