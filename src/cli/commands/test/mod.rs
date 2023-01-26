@@ -131,7 +131,7 @@ const MOCK_RX: &str = r"%\{\s+mock_call\((?P<func_to_mock>.*),\s*(?P<mock_value>
 /// Return a Result<MockedFn>
 ///
 /// ```
-/// 	use cairo_foundry::cli::commands::test::extract_fname_mock_values;
+/// use cairo_foundry::cli::commands::test::extract_fname_mock_values;
 ///
 /// let cairo_test = "func test_mock_call() {
 ///
@@ -179,7 +179,7 @@ fn list_test_mock_call(path: &PathBuf) -> Result<(), TestCommandError> {
 	//prepare sections to parse, corresponding to functions body
 	let mut pos: Vec<usize> = fun_regex.find_iter(data.as_str()).map(|x| x.start()).collect();
 	// append the last line to parse entire file
-	if pos.len() > 0 {
+	if !pos.is_empty() {
 		pos.push(data.len());
 	}
 
@@ -228,7 +228,8 @@ fn compile_and_list_entrypoints(
 ) -> Result<(PathBuf, PathBuf, Vec<String>), TestCommandError> {
 	let path_to_compiled = compile(&path_to_code)?;
 	let entrypoints = list_test_entrypoints(&path_to_compiled)?;
-	list_test_mock_call(&path_to_code);
+	assert!(list_test_mock_call(&path_to_code).is_ok());
+
 	Ok((path_to_code, path_to_compiled, entrypoints))
 }
 
