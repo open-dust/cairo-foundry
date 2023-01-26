@@ -188,7 +188,7 @@ fn list_test_mock_call(path: &PathBuf) -> Result<(), TestCommandError> {
 	while i != pos.len() - 1 {
 		match extract_fname_mock_values(&data[pos[i]..pos[i + 1]]) {
 			Ok(res) => {
-				println!("{:?}", res);
+				println!("{res:?}");
 			},
 			_ => {
 				println!("FAILURE");
@@ -394,7 +394,7 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 				Ok(result) => {
 					println!("{}", result.output);
 				},
-				Err(err) => println!("{}", format!("Error: {}", err).red()),
+				Err(err) => println!("{}", format!("Error: {err}").red()),
 			});
 
 		Ok(Default::default())
