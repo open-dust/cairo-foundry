@@ -1,6 +1,3 @@
-#[cfg(test)]
-mod tests;
-
 use cairo_rs::{
 	any_box,
 	hint_processor::{
@@ -15,6 +12,9 @@ use cairo_rs::{
 };
 use num_bigint::BigInt;
 use std::{any::Any, collections::HashMap, rc::Rc};
+
+#[cfg(test)]
+mod tests;
 
 #[allow(clippy::type_complexity)]
 pub struct HintFunc(
