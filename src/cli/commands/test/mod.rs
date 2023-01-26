@@ -15,9 +15,7 @@ use cairo_rs::{
 use clap::{Args, ValueHint};
 use colored::Colorize;
 use serde::Serialize;
-use std::{
-	collections::HashMap, fmt::Display, fs, io, path::PathBuf, sync::Arc, time::Instant,
-};
+use std::{collections::HashMap, fmt::Display, fs, io, path::PathBuf, sync::Arc, time::Instant};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -25,7 +23,7 @@ use super::{list::path_is_valid_directory, CommandExecution};
 
 use crate::{
 	cairo_run::cairo_run,
-	compile::{self, compile,Error},
+	compile::{self, compile, Error},
 	hints::{
 		output_buffer::{clear_buffer, get_buffer, init_buffer},
 		processor::setup_hint_processor,
@@ -133,7 +131,7 @@ const MOCK_RX: &str = r"%\{\s+mock_call\((?P<func_to_mock>.*),\s*(?P<mock_value>
 /// Return a Result<MockedFn>
 ///
 /// ```
-///	use cairo_foundry::cli::commands::test::extract_fname_mock_values;
+/// 	use cairo_foundry::cli::commands::test::extract_fname_mock_values;
 ///
 /// let cairo_test = "func test_mock_call() {
 ///
