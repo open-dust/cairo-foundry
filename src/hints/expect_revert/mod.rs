@@ -13,6 +13,21 @@ mod tests;
 
 pub const EXPECT_REVERT_FLAG: &str = "expect_revert";
 
+/// Expects an exception will be raised
+/// If an exception is triggered the test will pass. If not, the test will fail.
+///
+/// Returns Result<(), VirtualMachineError>
+///
+/// # Examples
+///
+/// Basic usage in a `.cairo` file:
+///
+/// ```cairo
+/// func test_that_should_revert() {
+///     %{ expect_revert() %}
+///     assert 2 = 3;
+/// }
+/// ```
 pub fn expect_revert(
 	_vm: &mut VirtualMachine,
 	exec_scopes: &mut ExecutionScopes,

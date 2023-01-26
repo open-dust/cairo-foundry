@@ -15,8 +15,8 @@ use num_bigint::BigInt;
 use uuid::Uuid;
 
 use crate::{
-	hints::{EXECUTION_UUID_VAR_NAME, EXPECT_REVERT_FLAG, MOCK_CALL_KEY},
-	hooks::HOOKS_VAR_NAME,
+	hints::{output_buffer::EXECUTION_UUID_VAR_NAME, EXPECT_REVERT_FLAG, MOCK_CALL_KEY},
+	hooks::{HOOKS_VAR_NAME, MAX_STEPS_VAR_NAME},
 };
 
 /// Execute a cairo program
@@ -34,6 +34,7 @@ pub fn cairo_run(
 	hint_processor: &mut dyn HintProcessor,
 	execution_uuid: Uuid,
 	opt_hooks: Option<Hooks>,
+	max_steps: u64,
 ) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
 	// 2023-01-06: FIXME: avoid hardcoded default layout & proof mode ?
 	let mut cairo_runner = CairoRunner::new(&program, "small", false)?;
@@ -45,6 +46,7 @@ pub fn cairo_run(
 		.insert_value(EXECUTION_UUID_VAR_NAME, bigint!(execution_uuid.as_u128()));
 	if let Some(hooks) = opt_hooks {
 		cairo_runner.exec_scopes.insert_value(HOOKS_VAR_NAME, hooks);
+		cairo_runner.exec_scopes.insert_value(MAX_STEPS_VAR_NAME, max_steps);
 	}
 
 	// Init exec context for mock_call

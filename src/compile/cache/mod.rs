@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::{fmt::Debug, fs::read_to_string, io, path::PathBuf};
 
 use thiserror::Error;
@@ -29,7 +32,7 @@ pub enum CacheError {
 const CAIRO_FOUNDRY_CACHE_DIR: &str = "cairo-foundry-cache";
 const CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR: &str = "compiled-cairo-files";
 
-pub fn read_cache_file(path: &PathBuf) -> Result<Cache, CacheError> {
+fn read_cache_file(path: &PathBuf) -> Result<Cache, CacheError> {
 	let file = read_to_string(path)?;
 	let data = serde_json::from_str::<Cache>(file.as_str())?;
 	Ok(data)
@@ -47,20 +50,19 @@ fn is_valid_cairo_contract(contract_path: &PathBuf) -> Result<(), CacheError> {
 	Ok(())
 }
 
-pub fn get_cache_path(contract_path: &PathBuf, root_dir: &PathBuf) -> Result<PathBuf, CacheError> {
+fn get_cache_path(contract_path: &PathBuf, root_dir: &PathBuf) -> Result<PathBuf, CacheError> {
 	// check if contract_path have .cairo extension
 	is_valid_cairo_contract(contract_path)?;
 	let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
 	// get relative dir path from root_dir
 	let contract_relative_path = contract_path.strip_prefix(root_dir)?;
 
-	let mut cache_path =
-		PathBuf::from(cache_dir.join(CAIRO_FOUNDRY_CACHE_DIR).join(contract_relative_path));
+	let mut cache_path = cache_dir.join(CAIRO_FOUNDRY_CACHE_DIR).join(contract_relative_path);
 	cache_path.set_extension("json");
-	return Ok(cache_path)
+	Ok(cache_path)
 }
 
-pub fn get_compiled_contract_path(
+fn get_compiled_contract_path(
 	contract_path: &PathBuf,
 	root_dir: &PathBuf,
 ) -> Result<PathBuf, CacheError> {
@@ -68,9 +70,8 @@ pub fn get_compiled_contract_path(
 	is_valid_cairo_contract(contract_path)?;
 	let cache_dir = dirs::cache_dir().ok_or(CacheError::CacheDirNotSupportedError)?;
 	let contract_relative_path = contract_path.strip_prefix(root_dir)?;
-	let mut compiled_contract_path = PathBuf::from(
-		cache_dir.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR).join(contract_relative_path),
-	);
+	let mut compiled_contract_path =
+		cache_dir.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR).join(contract_relative_path);
 	compiled_contract_path.set_extension("json");
-	return Ok(compiled_contract_path)
+	Ok(compiled_contract_path)
 }

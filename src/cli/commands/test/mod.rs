@@ -1,17 +1,10 @@
-pub mod cache;
 #[cfg(test)]
 pub mod tests;
 
-use crate::{
-	compile::Error,
-	hints::{self, EXPECT_REVERT_FLAG},
-};
 use regex::Regex;
 
 use cairo_rs::{
-	hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
-		BuiltinHintProcessor, HintFunc,
-	},
+	hint_processor::builtin_hint_processor::builtin_hint_processor_definition::BuiltinHintProcessor,
 	serde::deserialize_program::{deserialize_program_json, ProgramJson},
 	types::{errors::program_errors, program::Program},
 	vm::{
@@ -21,47 +14,53 @@ use cairo_rs::{
 };
 use clap::{Args, ValueHint};
 use colored::Colorize;
-// 2023-01-06: wwe can't execute parallel since HintFunc are reference counted
-// use rayon::prelude::*;
 use serde::Serialize;
-use serde_json::Value;
 use std::{
-	collections::HashMap, fmt::Display, fs, io, path::PathBuf, rc::Rc, sync::Arc, time::Instant,
+	collections::HashMap, fmt::Display, fs, io, path::PathBuf, sync::Arc, time::Instant,
 };
 use thiserror::Error;
 use uuid::Uuid;
 
-use super::{
-	list::{path_is_valid_directory, ListArgs, ListCommandError, ListOutput},
-	CommandExecution,
-};
+use super::{list::path_is_valid_directory, CommandExecution};
 
 use crate::{
 	cairo_run::cairo_run,
-	compile::{self, compile},
-	hints::{clear_buffer, expect_revert, get_buffer, init_buffer},
+	compile::{self, compile,Error},
+	hints::{
+		output_buffer::{clear_buffer, get_buffer, init_buffer},
+		processor::setup_hint_processor,
+		EXPECT_REVERT_FLAG,
+	},
 	hooks,
+	io::{
+		compiled_programs::{list_test_entrypoints, ListTestEntrypointsError},
+		test_files::{list_test_files, ListTestsFilesError},
+	},
 };
 
 /// Enum containing the possible errors that you may encounter in the ``Test`` module
 #[derive(Error, Debug)]
+// Todo: Maybe use anyhow at this level
+#[allow(clippy::large_enum_variant)]
 pub enum TestCommandError {
 	#[error("Failed to list test entrypoints for file {0}: {1}")]
-	ListEntrypointsError(PathBuf, String),
+	ListEntrypoints(PathBuf, String),
 	#[error("Failed to compile file {0}: {1}")]
-	RunTestError(String, PathBuf, String),
+	RunTest(String, PathBuf, String),
 	#[error(transparent)]
-	IOError(#[from] io::Error),
+	IO(#[from] io::Error),
 	#[error(transparent)]
-	JsonError(#[from] serde_json::Error),
+	JsonDeSerialization(#[from] serde_json::Error),
 	#[error(transparent)]
-	CompileError(#[from] compile::Error),
+	Compile(#[from] compile::Error),
 	#[error(transparent)]
-	ProgramError(#[from] program_errors::ProgramError),
+	Program(#[from] program_errors::ProgramError),
 	#[error(transparent)]
-	CairoRunError(#[from] CairoRunError),
+	CairoRun(#[from] CairoRunError),
 	#[error(transparent)]
-	ListCommandError(#[from] ListCommandError),
+	ListTestsFiles(#[from] ListTestsFilesError),
+	#[error(transparent)]
+	ListTestEntripoints(#[from] ListTestEntrypointsError),
 }
 
 /// Structure containing the path to a cairo directory.
@@ -71,21 +70,14 @@ pub struct TestArgs {
 	/// Path to a cairo directory
 	#[clap(short, long, value_hint=ValueHint::DirPath, value_parser=path_is_valid_directory, default_value="./")]
 	pub root: PathBuf,
+	#[clap(short, long, default_value_t = 1000000)]
+	pub max_steps: u64,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum TestStatus {
 	SUCCESS,
 	FAILURE,
-}
-
-impl Into<bool> for TestStatus {
-	fn into(self) -> bool {
-		match self {
-			TestStatus::SUCCESS => true,
-			TestStatus::FAILURE => false,
-		}
-	}
 }
 
 /// Structure representing the result of one or multiple test.
@@ -104,64 +96,13 @@ impl From<(String, TestStatus)> for TestResult {
 	}
 }
 
-/// Get the list of test entrypoint from a compiled cairo file.
-/// test entrypoint are function starting with "test_".
-/// The function will return a list of test entrypoint as `String` (ie: "test_function");
-///
-/// return a vector of entrypoints
-///
-/// # Examples
-///
-/// Basic usage:
-///
-/// ```ignore
-/// //assuming your program have a "test_function1" and "test_function2" functions.
-///
-/// let plain_path = PathBuf::from("path_to_your_program");
-/// let compiled_path = compile(&plain_path)?;
-/// let expected_entrypoints = vec![
-/// "test_function1",
-/// "test_function2"
-/// ]
-///
-/// assert_eq!(list_test_entrypoints(compiled_path), expected_entrypoints);
-/// ```
-fn list_test_entrypoints(compiled_path: &PathBuf) -> Result<Vec<String>, TestCommandError> {
-	let re = Regex::new(r"__main__.(test_\w+)$").expect("Should be a valid regex");
-	let data = fs::read_to_string(compiled_path)?;
-	let json = serde_json::from_str::<Value>(&data)?;
-	let mut test_entrypoints = Vec::new();
-
-	let identifiers = json["identifiers"].as_object();
-	match identifiers {
-		Some(identifiers) => {
-			for (key, value) in identifiers {
-				if re.is_match(key) && value["type"] == "function" {
-					// capture 0 refers to the whole match
-					// capture n-1 refers to the next to last match
-					// captures are denoted with () in regex
-					for capture in re.captures_iter(key) {
-						// regex __main__.(test_\w+)$ has 2 captures
-						// capture 0 is the whole match
-						// capture 1 is the first (and last) capture in this regex
-						test_entrypoints.push(capture[1].to_string());
-					}
-				}
-			}
-		},
-		None => eprintln!("Compilation output does not contain identifiers"),
-	}
-
-	Ok(test_entrypoints)
-}
-
 /// structure used to store a Mocked function in a cairo test entrypoint
 /// fn_name: the name of the function to mock in the cairo file
 /// fn_args: the list of parameters to replace the mock function call
 #[derive(Debug)]
 pub struct MockEntry<'a> {
-	fn_name: &'a str,
-	fn_args: &'a str,
+	pub fn_name: &'a str,
+	pub fn_args: &'a str,
 }
 
 /// subtype MockedFn store all the mocked functions in a single test entrypoint
@@ -191,8 +132,11 @@ const MOCK_RX: &str = r"%\{\s+mock_call\((?P<func_to_mock>.*),\s*(?P<mock_value>
 /// compute the list of mocked functions in a text string
 /// Return a Result<MockedFn>
 ///
-/// ``` ignore
+/// ```
+///	use cairo_foundry::cli::commands::test::extract_fname_mock_values;
+///
 /// let cairo_test = "func test_mock_call() {
+///
 ///     let mock_ret_value = 42;
 ///     let func_to_mock = get_label_location(mocked_func);
 ///     %{ mock_call(func_to_mock, [mock_ret_value]) %}
@@ -206,7 +150,7 @@ const MOCK_RX: &str = r"%\{\s+mock_call\((?P<func_to_mock>.*),\s*(?P<mock_value>
 /// assert_eq!(res["test_mock_call"][0].fn_name, "func_to_mock");
 /// assert_eq!(res["test_mock_call"][0].fn_args, "[mock_ret_value]");
 /// ```
-fn extract_fname_mock_values(data: &str) -> Result<MockedFn, Error> {
+pub fn extract_fname_mock_values(data: &str) -> Result<MockedFn, Error> {
 	let fun_regex: Regex = Regex::new(FUNC_RX).unwrap();
 	let mock_regex: Regex = Regex::new(MOCK_RX).unwrap();
 
@@ -267,21 +211,7 @@ impl Display for TestOutput {
 	}
 }
 
-fn setup_hint_processor() -> BuiltinHintProcessor {
-	let skip_hint = Rc::new(HintFunc(Box::new(hints::skip)));
-	let mock_call_hint = Rc::new(HintFunc(Box::new(hints::mock_call)));
-	let expect_revert_hint = Rc::new(HintFunc(Box::new(expect_revert)));
-	let mut hint_processor = BuiltinHintProcessor::new_empty();
-	hint_processor.add_hint(String::from("skip()"), skip_hint);
-	hint_processor.add_hint(String::from("expect_revert()"), expect_revert_hint);
-	hint_processor.add_hint(
-		String::from("mock_call(func_to_mock, mock_ret_value)"),
-		mock_call_hint,
-	);
-	hint_processor
-}
-
-///create a new ``Hooks`` object, with the followings hooks:
+/// Create a new ``Hooks`` object, with the followings hooks:
 /// - pre_step_instruction
 /// - post_step_instruction
 ///
@@ -293,33 +223,8 @@ fn setup_hooks() -> Hooks {
 	)
 }
 
-/// List the cairo files contained in a directory.
-/// Takes a path to a directory, and return a list of exact path to all cairo files contained into
-/// this directory.
-fn list_cairo_files(root: &PathBuf) -> Result<Vec<PathBuf>, ListCommandError> {
-	ListArgs {
-		root: PathBuf::from(root),
-	}
-	.exec()
-	.map(|cmd_output: ListOutput| cmd_output.files)
-}
-
-/// compile a cairo file, returning a truple
+/// Compile a cairo file, returning a truple
 /// (path_to_original_code, path_to_compiled_code, entrypoints)
-/// # Examples
-///
-/// Basic usage:
-///
-/// ```ignore
-/// let plain_path = PathBuf::from("path_to_your_program");
-/// let compiled_path = compile(&plain_path);
-/// let entrypoints = list_test_entrypoints(compiled_path);
-///
-/// assert_eq!(
-/// compile_and_list_entrypoints(plain_path),
-/// (plain_path, compiled_path, entrypoints)
-/// )
-/// ```
 fn compile_and_list_entrypoints(
 	path_to_code: PathBuf,
 ) -> Result<(PathBuf, PathBuf, Vec<String>), TestCommandError> {
@@ -339,39 +244,24 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 }
 
 /// Execute a single test.
-/// this function will take a program and an entrypoint name, will search for this entrypoint and
-/// execute the selected test.
+/// Take a program and a test name as input, search for this entrypoint in the compiled file
+/// and execute it.
 /// It will then return a TestResult, representing the output of the test.
-///
-/// # Examples
-///
-/// Basic usage:
-///
-/// ```ignore
-/// //assuming your program have a "test_function1" and "test_function2" functions.
-///
-/// let mut hint_processor = setup_hint_processor();
-/// let plain_path = PathBuf::from("path_to_your_program");
-/// let compiled_path = compile(&plain_path)?;
-/// let program = deserialize_program_json(&compiled_path)?;
-///
-/// test_single_entrypoint(program, "test_function1", hint_processor, None);
-/// test_single_entrypoint(program, "test_function2", hint_processor, None);
-/// ```
-pub(crate) fn test_single_entrypoint(
+fn test_single_entrypoint(
 	program: ProgramJson,
-	test_entrypoint: String,
+	test_entrypoint: &str,
 	hint_processor: &mut BuiltinHintProcessor,
 	hooks: Option<Hooks>,
+	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
 	let start = Instant::now();
 	let mut output = String::new();
 	let execution_uuid = Uuid::new_v4();
 	init_buffer(execution_uuid);
 
-	let program = Program::from_json(program, Some(&test_entrypoint))?;
+	let program = Program::from_json(program, Some(test_entrypoint))?;
 
-	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks);
+	let res_cairo_run = cairo_run(program, hint_processor, execution_uuid, hooks, max_steps);
 	let duration = start.elapsed();
 	let (opt_runner_and_output, test_success) = match res_cairo_run {
 		Ok(res) => {
@@ -438,30 +328,15 @@ pub(crate) fn test_single_entrypoint(
 /// each entrypoint provided.
 /// It will then return a TestResult corresponding to all the tests (SUCCESS if all the test
 /// succeded, FAILURE otherwise).
-///
-/// # Examples
-///
-/// Basic usage:
-///
-/// ```ignore
-/// //assuming your program have a "test_function1" and "test_function2" functions.
-///
-/// let mut hint_processor = setup_hint_processor();
-/// let plain_path = PathBuf::from("path_to_your_program");
-/// let compiled_path = compile(&plain_path)?;
-/// let hooks = setup_hooks();
-///
-/// run_test_for_one_file(hint_processor, plain_path, compiled_path, vec!("test_function1",
-/// "test_fuction2"), hooks);
-/// ```
 fn run_tests_for_one_file(
 	hint_processor: &mut BuiltinHintProcessor,
 	path_to_original: PathBuf,
 	path_to_compiled: PathBuf,
 	test_entrypoints: Vec<String>,
 	hooks: Hooks,
+	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
-	let file = fs::File::open(&path_to_compiled).unwrap();
+	let file = fs::File::open(path_to_compiled).unwrap();
 	let reader = io::BufReader::new(file);
 	let program_json = deserialize_program_json(reader)?;
 
@@ -471,9 +346,10 @@ fn run_tests_for_one_file(
 		.map(|test_entrypoint| {
 			test_single_entrypoint(
 				program_json.clone(),
-				test_entrypoint,
+				&test_entrypoint,
 				hint_processor,
 				Some(hooks.clone()),
+				max_steps,
 			)
 		})
 		.collect::<Result<Vec<_>, TestCommandError>>()?
@@ -497,7 +373,7 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 		let mut hint_processor = setup_hint_processor();
 		let hooks = setup_hooks();
 
-		list_cairo_files(&self.root)?
+		list_test_files(&self.root)?
 			//.into_par_iter()
 			.into_iter()
 			.map(compile_and_list_entrypoints)
@@ -510,6 +386,7 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 							path_to_compiled,
 							test_entrypoints,
 							hooks.clone(),
+							self.max_steps,
 						),
 					Err(err) => Err(err),
 				}

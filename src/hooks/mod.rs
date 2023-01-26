@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::{collections::HashMap, ops::Add};
 
 use cairo_rs::{
@@ -9,6 +12,7 @@ use num_bigint::BigInt;
 use crate::hints::MOCK_CALL_KEY;
 
 pub const HOOKS_VAR_NAME: &str = "hooks";
+pub const MAX_STEPS_VAR_NAME: &str = "max_steps";
 
 /// Called before an instruction is executed by the virtual machine (VM).
 ///
@@ -27,6 +31,9 @@ pub fn pre_step_instruction(
 	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
 	let instruction = vm.decode_current_instruction()?;
+
+	ensure_max_steps_not_reached(vm, exec_scopes)?;
+
 	if instruction.opcode == Opcode::Call {
 		let (operands, _operands_mem_addresses, _deduced_operands) =
 			vm.compute_operands(&instruction)?;
@@ -41,7 +48,7 @@ pub fn pre_step_instruction(
 			})?;
 
 		if let Some(mocked_ret_value) = mocks.get(&new_pc.offset) {
-			let pc = vm.get_pc().clone();
+			let pc = *vm.get_pc();
 			let ap = vm.get_ap();
 			vm.insert_value(&ap, mocked_ret_value)?;
 			vm.set_pc(pc.add(2));
@@ -67,4 +74,19 @@ pub fn post_step_instruction(
 	_constants: &HashMap<String, BigInt>,
 ) -> Result<(), VirtualMachineError> {
 	Ok(())
+}
+
+pub fn ensure_max_steps_not_reached(
+	vm: &mut VirtualMachine,
+	exec_scopes: &mut ExecutionScopes,
+) -> Result<(), VirtualMachineError> {
+	if *vm.get_current_step() >= exec_scopes.get::<u64>(MAX_STEPS_VAR_NAME)? as usize {
+		// TODO: find a better way to express custom errors
+		Err(VirtualMachineError::CustomHint(format!(
+			"max_steps reached: {}",
+			*vm.get_current_step()
+		)))
+	} else {
+		Ok(())
+	}
 }

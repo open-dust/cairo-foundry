@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashMap;
 
 use cairo_rs::{
@@ -15,10 +18,12 @@ use num_bigint::BigInt;
 ///
 /// # Examples
 ///
-/// Basic usage:
+/// Basic usage in a `.cairo` file:
 ///
-/// ```ignore
-/// %{ skip() %}
+/// ```cairo
+/// func test_to_be_implemented_later() {
+///     %{ skip() %}
+/// }
 /// ```
 pub fn skip(
 	_vm: &mut VirtualMachine,

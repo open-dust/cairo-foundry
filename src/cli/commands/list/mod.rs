@@ -4,12 +4,11 @@ mod tests;
 use std::{fmt, path::PathBuf};
 
 use clap::{Args, ValueHint};
-use lazy_static::lazy_static;
 use log::info;
-use regex::Regex;
 use serde::Serialize;
 use thiserror::Error;
-use walkdir::WalkDir;
+
+use crate::io::test_files::{list_test_files, ListTestsFilesError};
 
 use super::CommandExecution;
 
@@ -24,7 +23,7 @@ pub struct ListArgs {
 #[derive(Error, Debug)]
 pub enum ListCommandError {
 	#[error(transparent)]
-	ListFilesError(#[from] walkdir::Error),
+	ListFilesError(#[from] ListTestsFilesError),
 }
 
 /// Function used to validate directory type of the specified Path
@@ -80,31 +79,11 @@ impl CommandExecution<ListOutput, ListCommandError> for ListArgs {
 	/// Returns a `ListOutput` struct with all valid tests files in the `.files: vector<PathBuf>`
 	/// or an error `ListCommandError`, the first Error encoutered during the
 	/// processing of the root directory.
-
 	fn exec(&self) -> Result<ListOutput, ListCommandError> {
 		info!("Listing files within directory {:?}", self.root);
 
-		lazy_static! {
-			static ref TEST_FILE_REGEX: Regex = Regex::new(r"^test_.*\.cairo$").unwrap();
-		}
+		let tests_list = list_test_files(&self.root)?;
 
-		let mut test_files = WalkDir::new(&self.root)
-			.into_iter()
-			.filter_map(|entry_result| match entry_result {
-				Ok(entry) => {
-					if entry.path().is_file()
-						&& TEST_FILE_REGEX.is_match(&entry.file_name().to_string_lossy())
-					{
-						Some(Ok(entry.path().to_path_buf()))
-					} else {
-						None
-					}
-				},
-				Err(err) => Some(Err(ListCommandError::ListFilesError(err))),
-			})
-			.collect::<Result<Vec<_>, ListCommandError>>()?;
-		test_files.sort();
-
-		Ok(ListOutput { files: test_files })
+		Ok(ListOutput { files: tests_list })
 	}
 }
