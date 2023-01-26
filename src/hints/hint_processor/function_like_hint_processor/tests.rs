@@ -11,7 +11,9 @@ fn wrong_custom_hint(
 	#[case] expected_success: TestStatus,
 ) -> Result<(), TestCommandError> {
 	let path = std::path::PathBuf::from(path);
-	let result = run_single_test("test_wrong_custom_hint", &path).expect("Should be Ok").success;
+	let result = run_single_test("test_wrong_custom_hint", &path, 1000000)
+		.expect("Should be Ok")
+		.success;
 	assert_eq!(expected_success, result);
 	Ok(())
 }

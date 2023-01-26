@@ -285,7 +285,7 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 				Ok(result) => {
 					println!("{}", result.output);
 				},
-				Err(err) => println!("{}", format!("Error: {}", err).red()),
+				Err(err) => println!("{}", format!("Error: {err}").red()),
 			});
 
 		Ok(Default::default())
