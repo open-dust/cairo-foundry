@@ -8,5 +8,5 @@ fn output_can_display_as_string() {
 		files: vec![PathBuf::from("item 1"), PathBuf::from("item 2")],
 	};
 
-	assert_eq!("item 1\nitem 2", format!("{}", output));
+	assert_eq!("item 1\nitem 2", format!("{output}"));
 }

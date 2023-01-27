@@ -37,6 +37,6 @@ fn test_function_like_hint_should_return_unknown_hint_error(
 		&HashMap::new(),
 	);
 
-	assert_matches!(result, Err(VirtualMachineError::UnknownHint(code)) if code == hint_code.to_string());
+	assert_matches!(result, Err(VirtualMachineError::UnknownHint(code)) if code == *hint_code.to_string());
 	Ok(())
 }
