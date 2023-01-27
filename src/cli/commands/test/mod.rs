@@ -2,7 +2,6 @@
 pub mod tests;
 
 use cairo_rs::{
-	hint_processor::builtin_hint_processor::builtin_hint_processor_definition::BuiltinHintProcessor,
 	serde::deserialize_program::{deserialize_program_json, ProgramJson},
 	types::{errors::program_errors, program::Program},
 	vm::{
@@ -23,6 +22,7 @@ use crate::{
 	cairo_run::cairo_run,
 	compile::{self, compile},
 	hints::{
+		hint_processor::function_like_hint_processor::FunctionLikeHintProcessor,
 		output_buffer::{clear_buffer, get_buffer, init_buffer},
 		processor::setup_hint_processor,
 		EXPECT_REVERT_FLAG,
@@ -140,7 +140,7 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 fn test_single_entrypoint(
 	program: ProgramJson,
 	test_entrypoint: &str,
-	hint_processor: &mut BuiltinHintProcessor,
+	hint_processor: &mut FunctionLikeHintProcessor,
 	hooks: Option<Hooks>,
 	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
@@ -219,7 +219,7 @@ fn test_single_entrypoint(
 /// It will then return a TestResult corresponding to all the tests (SUCCESS if all the test
 /// succeded, FAILURE otherwise).
 fn run_tests_for_one_file(
-	hint_processor: &mut BuiltinHintProcessor,
+	hint_processor: &mut FunctionLikeHintProcessor,
 	path_to_original: PathBuf,
 	path_to_compiled: PathBuf,
 	test_entrypoints: Vec<String>,
@@ -285,7 +285,7 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 				Ok(result) => {
 					println!("{}", result.output);
 				},
-				Err(err) => println!("{}", format!("Error: {}", err).red()),
+				Err(err) => println!("{}", format!("Error: {err}").red()),
 			});
 
 		Ok(Default::default())

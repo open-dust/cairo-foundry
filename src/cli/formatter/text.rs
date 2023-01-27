@@ -8,7 +8,7 @@ where
 	Output: fmt::Display,
 {
 	fn format(&self, output: &Output) -> String {
-		format!("{}", output)
+		format!("{output}")
 	}
 }
 
