@@ -1,3 +1,4 @@
+pub mod program_parsing;
 #[cfg(test)]
 pub mod tests;
 
@@ -12,9 +13,8 @@ use cairo_rs::{
 };
 use clap::{Args, ValueHint};
 use colored::Colorize;
-use regex::Regex;
 use serde::Serialize;
-use std::{collections::HashMap, fmt::Display, fs, io, path::PathBuf, sync::Arc, time::Instant};
+use std::{fmt::Display, fs, io, path::PathBuf, sync::Arc, time::Instant};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -291,42 +291,4 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 
 		Ok(Default::default())
 	}
-}
-
-/// Retrieve return signatures for each function of a cairo program
-///
-/// Return an HashMap containing return signatures of each function:
-/// - key is function symbol
-/// - value is list of types present in return signatures
-pub fn retrieve_return_signatures(program: &Program) -> HashMap<String, Vec<String>> {
-	let re_tuple = Regex::new(r"^\(.*\)$").expect("Should be a valid regexp");
-	let re_type =
-		Regex::new(r"\w+\s*:\s*(?P<type_name>(\w+\.?)+\*?)").expect("Should be a valid regex");
-	let mut signatures: HashMap<String, Vec<String>> = HashMap::new();
-	for (key, value) in program.identifiers.iter() {
-		if value.type_.as_deref() == Some("type_definition") {
-			let mut return_types = Vec::new();
-			let cairo_type = value.cairo_type.clone().unwrap();
-
-			if re_tuple.is_match(&cairo_type) {
-				if re_type.is_match(&cairo_type) {
-					for capture in re_type.captures_iter(&cairo_type) {
-						let captured = capture["type_name"].to_string();
-						return_types.push(captured);
-					}
-				}
-			} else {
-				return_types.push(cairo_type.clone());
-			}
-			if key.ends_with(".Return") {
-				signatures.insert(
-					String::from(key.strip_suffix(".Return").unwrap()),
-					return_types,
-				);
-			} else {
-				signatures.insert(key.to_owned(), return_types);
-			}
-		}
-	}
-	signatures
 }
