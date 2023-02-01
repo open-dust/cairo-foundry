@@ -9,6 +9,8 @@ use std::{
 use thiserror::Error;
 use which::{which, Error as WhichError};
 
+pub mod cache;
+
 const JSON_FILE_EXTENTION: &str = "json";
 const CAIRO_COMPILE_BINARY: &str = "cairo-compile";
 
@@ -73,7 +75,7 @@ pub fn compile(path_to_cairo_file: &PathBuf) -> Result<PathBuf, Error> {
 					e
 				)
 			}),
-		))
+		));
 	}
 
 	// Retrieve only the file name to create a clean compiled file name.
