@@ -1,87 +1,74 @@
-use std::io;
-use std::{fmt::Display, fs, path::PathBuf};
+use std::{fmt::Display, fs, io, path::PathBuf};
 
 mod tests;
 
 use clap::Args;
 use serde::Serialize;
 
-use crate::compile::cache;
-use crate::compile::Error::CacheDirSupported;
-
 use thiserror::Error;
 
 use super::CommandExecution;
 
+use crate::compile::cache;
 #[derive(Args, Debug)]
 pub struct CleanArgs {}
 
 #[derive(Debug, Serialize)]
 pub struct CleanOutput {
 	/// The list of cleaned dirs
-	pub dirs: Vec<PathBuf>,
+	pub dirs: Vec<(PathBuf, bool)>,
 }
 
 #[derive(Error, Debug)]
 pub enum CleanCommandError {
 	#[error(transparent)]
-	CleanCacheDirSupported(#[from] crate::compile::Error),
+	CacheDirNotSupportedError(#[from] cache::CacheDirNotSupportedError),
 	#[error("Cannot remove directory {dir}: {err}")]
-	DirDeletion { dir: PathBuf, err: io::Error },
+	DirDeletion { dir: String, err: io::Error },
 }
 
 impl Display for CleanOutput {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		if self.dirs.is_empty() {
-			write!(f, "No directory to clean")
-		} else {
-			write!(
-				f,
-				"Cleaned successfully: \n{}\n",
-				self.dirs
-					.iter()
-					.map(|path| path.display().to_string())
-					.collect::<Vec<_>>()
-					.join("\n")
-			)
+		for (dir, deleted) in self.dirs.iter() {
+			if *deleted {
+				write!(f, "Cleaning {}: done\n", dir.display().to_string())?;
+			} else {
+				write!(f, "Cleaning {}: not found\n", dir.display().to_string())?;
+			}
 		}
+		write!(f, "Cache cleaned successfully.\n")
 	}
 }
 
-fn clean_cache_dir(path: &str) -> Result<Option<PathBuf>, CleanCommandError> {
-	let path_to_cache_dir = dirs::cache_dir().ok_or(CacheDirSupported)?;
-
-	let mut dir = PathBuf::new();
-	dir.push(&path_to_cache_dir);
-	dir.push(path);
+fn clean_cache_path(path: &str) -> Result<(PathBuf, bool), CleanCommandError> {
+	let dir = cache::cache_dir()?.join(path);
+	let mut deleted = false;
 
 	if dir.exists() {
 		fs::remove_dir_all(&dir).map_err(|err| CleanCommandError::DirDeletion {
-			// TODO: avoid .clone
-			dir: dir.clone(),
+			dir: dir.as_path().display().to_string(),
 			err,
 		})?;
-		return Ok(Some(dir));
+		deleted = true;
 	}
 
-	Ok(None)
+	Ok((dir, deleted))
 }
 
 impl CommandExecution<CleanOutput, CleanCommandError> for CleanArgs {
 	fn exec(&self) -> Result<CleanOutput, CleanCommandError> {
-		let mut cleaned_dirs: Vec<PathBuf> = Vec::new();
+		let mut dirs: Vec<(PathBuf, bool)> = Vec::new();
 
-		let cleaned_foundry_cache_dir = clean_cache_dir(cache::CAIRO_FOUNDRY_CACHE_DIR)?;
-		if cleaned_foundry_cache_dir.is_some() {
-			cleaned_dirs.push(cleaned_foundry_cache_dir.unwrap());
+		let paths_to_clean = [
+			cache::CAIRO_FOUNDRY_CACHE_DIR,
+			cache::CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR,
+		];
+
+		for path in paths_to_clean.iter() {
+			let result = clean_cache_path(path)?;
+			dirs.push(result)
 		}
-		let cleaned_compiled_contract_dir =
-			clean_cache_dir(cache::CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR)?;
 
-		if cleaned_compiled_contract_dir.is_some() {
-			cleaned_dirs.push(cleaned_compiled_contract_dir.unwrap());
-		}
-
-		Ok(CleanOutput { dirs: cleaned_dirs })
+		Ok(CleanOutput { dirs })
 	}
 }

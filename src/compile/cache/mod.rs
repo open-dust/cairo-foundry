@@ -28,9 +28,19 @@ pub enum CacheError {
 	#[error(transparent)]
 	StripPrefixError(#[from] std::path::StripPrefixError),
 }
+// CacheDirNotSupported is a top level struct and not an enum variant because
+// it's converted elsewhere to other errors using [#from] and we want to be
+// as specific as possible
+#[derive(Error, Debug)]
+#[error("cache directory does not exist on this platform")]
+pub struct CacheDirNotSupportedError;
 
 pub const CAIRO_FOUNDRY_CACHE_DIR: &str = "cairo-foundry-cache";
 pub const CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR: &str = "compiled-cairo-files";
+
+pub fn cache_dir() -> Result<PathBuf, CacheDirNotSupportedError> {
+	dirs::cache_dir().ok_or(CacheDirNotSupportedError)
+}
 
 fn read_cache_file(path: &PathBuf) -> Result<Cache, CacheError> {
 	let file = read_to_string(path)?;
@@ -45,7 +55,7 @@ fn is_valid_cairo_contract(contract_path: &PathBuf) -> Result<(), CacheError> {
 	if extension != "cairo" {
 		return Err(CacheError::InvalidContractExtension(
 			contract_path.to_owned(),
-		));
+		))
 	}
 	Ok(())
 }
