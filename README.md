@@ -52,7 +52,7 @@ The short-term goal is to build an efficient test runner for Cairo smart contrac
     TL;DR:
 
     - `brew install gmp` to install the latest version of the _GNU Multiple Precision Arithmetic Library_.
-    - Anytime you interact with pip3, or some python package manager that interacts with `cairo-lang`, you'll need specific flags active. Example for installing dependecy package for `cairo-lang`:
+    - Anytime you interact with pip3, or some python package manager that interacts with `cairo-lang`, you'll need specific flags active. Example for installing dependency package for `cairo-lang`:
 
         `` CFLAGS=-I`brew --prefix gmp`/include LDFLAGS=-L`brew --prefix gmp`/lib pip3 install ecdsa fastecdsa sympy ``
 
@@ -80,7 +80,7 @@ Coming soon! 👷
 
 ## 🫶 Contributing
 
-Pull requests are welcome, please check our [contribution guidelines](./CONTRIBUTING.md) .
+Pull requests are welcome, please check our [contribution guidelines](./CONTRIBUTING.md).
 
 ## 📄 License
 
