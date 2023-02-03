@@ -1,6 +1,7 @@
-use std::{fmt::Display, fs, io, path::PathBuf};
-
+#[cfg(test)]
 mod tests;
+
+use std::{fmt::Display, fs, io, path::PathBuf};
 
 use clap::Args;
 use serde::Serialize;
@@ -21,7 +22,7 @@ pub struct CleanOutput {
 #[derive(Error, Debug)]
 pub enum CleanCommandError {
 	#[error(transparent)]
-	CacheDirNotSupportedError(#[from] cache::CacheDirNotSupportedError),
+	CacheDirNotSupported(#[from] cache::CacheDirNotSupported),
 	#[error("Cannot remove directory {dir}: {err}")]
 	DirDeletion { dir: String, err: io::Error },
 }
@@ -45,7 +46,7 @@ fn remove_dir_all_if_exists(dir: &PathBuf) -> Result<bool, CleanCommandError> {
 			dir: dir.as_path().display().to_string(),
 			err,
 		})?;
-		return Ok(true)
+		return Ok(true);
 	}
 	Ok(false)
 }
