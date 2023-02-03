@@ -1,7 +1,49 @@
-use crate::cli::commands::{clean::CleanArgs, CommandExecution};
+use std::{error::Error, fs, path::PathBuf};
+
+use crate::{
+	cli::commands::{
+		clean::{CleanArgs, CleanCommandError, CleanOutput},
+		CommandExecution,
+	},
+	compile::cache,
+};
 
 #[test]
-fn should_clean_properly() {
-	let result = CleanArgs {}.exec();
-	assert!(result.is_ok(), "{}", result.unwrap_err())
+fn output_can_display_as_string() {
+	let output = CleanOutput {
+		dirs: vec![
+			(PathBuf::from("/dir1"), true),
+			(PathBuf::from("/dir2"), false),
+		],
+	};
+
+	let expected_output = "cleaned  : /dir1\nnot found: /dir2\nCache cleaned successfully.\n";
+
+	assert_eq!(expected_output, format!("{}", output));
+}
+
+#[test]
+fn clean_cache_dirs() -> Result<(), CleanCommandError> {
+	let test_cache_dir = cache::cache_dir()?;
+	fs::create_dir_all(test_cache_dir.join(cache::CAIRO_FOUNDRY_CACHE_DIR));
+
+	let output = CleanArgs {}.exec()?;
+
+	let expected_dirs = vec![
+		(test_cache_dir.join(cache::CAIRO_FOUNDRY_CACHE_DIR), true),
+		(
+			test_cache_dir.join(cache::CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR),
+			false,
+		),
+	];
+
+	let expected_output = CleanOutput {
+		dirs: expected_dirs,
+	};
+
+	assert_eq!(expected_output, output);
+
+	fs::remove_dir_all(test_cache_dir);
+
+	Ok(())
 }

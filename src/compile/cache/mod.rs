@@ -1,12 +1,11 @@
 #[cfg(test)]
 mod tests;
 
-use std::{fmt::Debug, fs::read_to_string, io, path::PathBuf};
-
-use thiserror::Error;
+use std::{env, fmt::Debug, fs::read_to_string, io, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 use serde_json;
+use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Cache {
@@ -38,8 +37,14 @@ pub struct CacheDirNotSupportedError;
 pub const CAIRO_FOUNDRY_CACHE_DIR: &str = "cairo-foundry-cache";
 pub const CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR: &str = "compiled-cairo-files";
 
+#[cfg(not(test))]
 pub fn cache_dir() -> Result<PathBuf, CacheDirNotSupportedError> {
 	dirs::cache_dir().ok_or(CacheDirNotSupportedError)
+}
+
+#[cfg(test)]
+pub fn cache_dir() -> Result<PathBuf, CacheDirNotSupportedError> {
+	Ok(env::temp_dir().join("cairo-foundry-tests"))
 }
 
 fn read_cache_file(path: &PathBuf) -> Result<Cache, CacheError> {
