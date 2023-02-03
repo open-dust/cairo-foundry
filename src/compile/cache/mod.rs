@@ -32,18 +32,18 @@ pub enum CacheError {
 // as specific as possible
 #[derive(Error, Debug)]
 #[error("cache directory does not exist on this platform")]
-pub struct CacheDirNotSupportedError;
+pub struct CacheDirNotSupported;
 
 pub const CAIRO_FOUNDRY_CACHE_DIR: &str = "cairo-foundry-cache";
 pub const CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR: &str = "compiled-cairo-files";
 
 #[cfg(not(test))]
-pub fn cache_dir() -> Result<PathBuf, CacheDirNotSupportedError> {
-	dirs::cache_dir().ok_or(CacheDirNotSupportedError)
+pub fn cache_dir() -> Result<PathBuf, CacheDirNotSupported> {
+	dirs::cache_dir().ok_or(CacheDirNotSupported)
 }
 
 #[cfg(test)]
-pub fn cache_dir() -> Result<PathBuf, CacheDirNotSupportedError> {
+pub fn cache_dir() -> Result<PathBuf, CacheDirNotSupported> {
 	Ok(env::temp_dir().join("cairo-foundry-tests"))
 }
 
@@ -60,7 +60,7 @@ fn is_valid_cairo_contract(contract_path: &PathBuf) -> Result<(), CacheError> {
 	if extension != "cairo" {
 		return Err(CacheError::InvalidContractExtension(
 			contract_path.to_owned(),
-		))
+		));
 	}
 	Ok(())
 }

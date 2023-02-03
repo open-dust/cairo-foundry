@@ -1,4 +1,5 @@
-use std::{error::Error, fs, path::PathBuf};
+#[cfg(test)]
+use std::{fs, path::PathBuf};
 
 use crate::{
 	cli::commands::{
