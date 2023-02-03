@@ -13,9 +13,8 @@ use crate::compile::cache;
 #[derive(Args, Debug)]
 pub struct CleanArgs {}
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct CleanOutput {
-	/// The list of cleaned dirs
 	pub dirs: Vec<(PathBuf, bool)>,
 }
 
@@ -46,7 +45,7 @@ fn remove_dir_all_if_exists(dir: &PathBuf) -> Result<bool, CleanCommandError> {
 			dir: dir.as_path().display().to_string(),
 			err,
 		})?;
-		return Ok(true);
+		return Ok(true)
 	}
 	Ok(false)
 }
