@@ -2,7 +2,9 @@ use std::path::PathBuf;
 
 use assert_matches::assert_matches;
 
-use super::{get_cache_path, get_compiled_contract_path, read_cache_file, Cache, CacheError};
+use super::{
+	cache_dir, get_cache_path, get_compiled_contract_path, read_cache_file, Cache, CacheError,
+};
 
 const CAIRO_FOUNDRY_CACHE_DIR: &str = "cairo-foundry-cache";
 const CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR: &str = "compiled-cairo-files";
@@ -47,8 +49,8 @@ fn get_cache_path_for_valid_contract_path() {
 	let contract_path = root_dir.join("test_valid_program_in_cairo_contracts_dir.cairo");
 	let cache_path = get_cache_path(&contract_path, &root_dir).unwrap();
 
-	let cache_dir = dirs::cache_dir().unwrap();
-	let expected = cache_dir
+	let expected = cache_dir()
+		.unwrap()
 		.join(CAIRO_FOUNDRY_CACHE_DIR)
 		.join("test_valid_program_in_cairo_contracts_dir.json");
 
@@ -58,8 +60,8 @@ fn get_cache_path_for_valid_contract_path() {
 	let contract_path = current_dir.join("test_valid_program_in_project_root_dir.cairo");
 	let cache_path = get_cache_path(&contract_path, &current_dir).unwrap();
 
-	let cache_dir = dirs::cache_dir().unwrap();
-	let expected = cache_dir
+	let expected = cache_dir()
+		.unwrap()
 		.join(CAIRO_FOUNDRY_CACHE_DIR)
 		.join("test_valid_program_in_project_root_dir.json");
 	assert_eq!(cache_path, expected);
@@ -68,7 +70,8 @@ fn get_cache_path_for_valid_contract_path() {
 	let arbitrary_dir = PathBuf::from("arbitrary_dir");
 	let contract_path = arbitrary_dir.join("test_valid_program_in_arbitrary_path.cairo");
 	let cache_path = get_cache_path(&contract_path, &arbitrary_dir).unwrap();
-	let expected = cache_dir
+	let expected = cache_dir()
+		.unwrap()
 		.join(CAIRO_FOUNDRY_CACHE_DIR)
 		.join("test_valid_program_in_arbitrary_path.json");
 	assert_eq!(cache_path, expected);
@@ -80,8 +83,8 @@ fn get_cache_path_for_valid_contract_path() {
 		.join("test_valid_program_in_cairo_contracts_dir.cairo");
 	let cache_path = get_cache_path(&contract_path, &root_dir).unwrap();
 
-	let cache_dir = dirs::cache_dir().unwrap();
-	let expected = cache_dir
+	let expected = cache_dir()
+		.unwrap()
 		.join(CAIRO_FOUNDRY_CACHE_DIR)
 		.join("test_nested_dir")
 		.join("test_valid_program_in_cairo_contracts_dir.json");
@@ -124,10 +127,10 @@ fn get_compiled_contract_path_for_valid_contract_path() {
 	let contract_path = root_dir.join("test_valid_program_in_test_cairo_contracts_dir.cairo");
 	let compiled_contract_path = get_compiled_contract_path(&contract_path, &root_dir).unwrap();
 
-	let cache_dir = dirs::cache_dir().unwrap();
 	assert_eq!(
 		compiled_contract_path,
-		cache_dir
+		cache_dir()
+			.unwrap()
 			.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR)
 			.join("test_valid_program_in_test_cairo_contracts_dir.json")
 	);
@@ -137,7 +140,8 @@ fn get_compiled_contract_path_for_valid_contract_path() {
 	let compiled_contract_path = get_compiled_contract_path(&contract_path, &root_dir).unwrap();
 	assert_eq!(
 		compiled_contract_path,
-		cache_dir
+		cache_dir()
+			.unwrap()
 			.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR)
 			.join("test_nested_dir")
 			.join("test_valid_program_in_nested_dir.json")
