@@ -44,7 +44,7 @@ pub enum Error {
 ///
 /// Basic usage:
 ///
-/// ```no_run
+/// ```
 /// # use std::path::PathBuf;
 /// # use cairo_foundry::compile::{compile, Error};
 /// # fn foo() -> Result<(), Error> {

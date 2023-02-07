@@ -16,6 +16,34 @@ use num_bigint::BigInt;
 
 pub const MOCK_CALL_KEY: &str = "mock_call";
 
+/// `mock_call` mocks the return value of a specific function.
+///  This function is designed to be a hint, executable by the HintExecutor of the cairoVM
+///
+/// ## Parameters
+///
+/// * `vm`: a mutable reference to the VirtualMachine, which is responsible for executing the code.
+/// * `exec_scopes`: a mutable reference to the ExecutionScopes, which stores variables and other
+///   data for a specific scope of execution.
+/// * `ids_data`: a reference to a hash map containing the cairo runtime identifiers and their
+///   corresponding data.
+/// * `ap_tracking`: a reference to the ApTracking, which keeps track of the allocation pointer
+///   updates.
+/// * `_constants`: a reference to a hash map containing constant values.
+///
+///
+/// # Examples
+///
+/// ```no_run
+/// # use std::rc::Rc;
+/// # use cairo_rs::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{BuiltinHintProcessor, HintFunc,};
+/// # use crate::hints;
+/// # fn foo() ->BuiltinHintProcessor {
+/// 	let mock_call_hint = Rc::new(HintFunc(Box::new(hints::mock_call)));
+///     let mut hint_processor = BuiltinHintProcessor::new_empty();
+/// 	hint_processor.add_hint(String::from("mock_call"), mock_call_hint);
+/// # 	hint_processor
+/// #  }
+/// ```
 pub fn mock_call(
 	vm: &mut VirtualMachine,
 	exec_scopes: &mut ExecutionScopes,
