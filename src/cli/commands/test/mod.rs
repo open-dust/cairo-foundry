@@ -12,6 +12,7 @@ use cairo_rs::{
 use clap::{Args, ValueHint};
 use colored::Colorize;
 use serde::Serialize;
+use serde_json::Value;
 use std::{fmt::Display, fs, io, path::PathBuf, sync::Arc, time::Instant};
 use thiserror::Error;
 use uuid::Uuid;
@@ -118,10 +119,10 @@ fn setup_hooks() -> Hooks {
 /// (path_to_original_code, path_to_compiled_code, entrypoints)
 fn compile_and_list_entrypoints(
 	path_to_code: PathBuf,
-) -> Result<(PathBuf, PathBuf, Vec<String>), TestCommandError> {
-	let path_to_compiled = compile(&path_to_code)?;
-	let entrypoints = list_test_entrypoints(&path_to_compiled)?;
-	Ok((path_to_code, path_to_compiled, entrypoints))
+) -> Result<(PathBuf, Value, Vec<String>), TestCommandError> {
+	let program_json = compile(&path_to_code)?;
+	let entrypoints = list_test_entrypoints(&program_json)?;
+	Ok((path_to_code, program_json, entrypoints))
 }
 
 fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
@@ -198,14 +199,15 @@ fn test_single_entrypoint(
 
 	// Display the execution output if present
 	match runner.get_output(&mut vm) {
-		Ok(runner_output) =>
+		Ok(runner_output) => {
 			if !runner_output.is_empty() {
 				output.push_str(&format!(
 					"[{}]:\n{}",
 					"execution output".purple(),
 					&runner_output
 				));
-			},
+			}
+		},
 		Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
 	};
 
@@ -221,14 +223,12 @@ fn test_single_entrypoint(
 fn run_tests_for_one_file(
 	hint_processor: &mut FunctionLikeHintProcessor,
 	path_to_original: PathBuf,
-	path_to_compiled: PathBuf,
+	program_json: Value,
 	test_entrypoints: Vec<String>,
 	hooks: Hooks,
 	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
-	let file = fs::File::open(path_to_compiled).unwrap();
-	let reader = io::BufReader::new(file);
-	let program_json = deserialize_program_json(reader)?;
+	let program_json: ProgramJson = serde_json::from_value(program_json)?;
 
 	let output = format!("Running tests in file {}\n", path_to_original.display());
 	let res = test_entrypoints
@@ -269,15 +269,16 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 			.map(compile_and_list_entrypoints)
 			.map(|res| -> Result<TestResult, TestCommandError> {
 				match res {
-					Ok((path_to_original, path_to_compiled, test_entrypoints)) =>
+					Ok((path_to_original, program_json, test_entrypoints)) => {
 						run_tests_for_one_file(
 							&mut hint_processor,
 							path_to_original,
-							path_to_compiled,
+							program_json,
 							test_entrypoints,
 							hooks.clone(),
 							self.max_steps,
-						),
+						)
+					},
 					Err(err) => Err(err),
 				}
 			})

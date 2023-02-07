@@ -1,17 +1,13 @@
-use dirs;
-use std::{
-	fmt::Debug,
-	fs::File,
-	io::{self, Write},
-	path::PathBuf,
-	process::Command,
-};
+use log::warn;
+use serde_json::Value;
+use std::{fmt::Debug, io, path::PathBuf, process::Command};
 use thiserror::Error;
 use which::{which, Error as WhichError};
 
+use self::cache::{compute_hash, get_cache_path, read_cache, store_cache, Cache, CacheError};
+
 pub mod cache;
 
-const JSON_FILE_EXTENTION: &str = "json";
 const CAIRO_COMPILE_BINARY: &str = "cairo-compile";
 
 #[derive(Error, Debug)]
@@ -32,6 +28,10 @@ pub enum Error {
 	DirCreation(String, io::Error),
 	#[error("failed to write to file '{0}': {1}")]
 	WriteToFile(String, io::Error),
+	#[error(transparent)]
+	Json(#[from] serde_json::Error),
+	#[error(transparent)]
+	CacheError(#[from] CacheError),
 }
 
 /// Compile a cairo file.
@@ -55,7 +55,40 @@ pub enum Error {
 /// # Ok(())
 /// # }
 /// ```
-pub fn compile(path_to_cairo_file: &PathBuf) -> Result<PathBuf, Error> {
+pub fn compile(path_to_cairo_file: &PathBuf) -> Result<Value, Error> {
+	let cache_path = get_cache_path(path_to_cairo_file)?;
+
+	let hash = compute_hash(&path_to_cairo_file)?;
+
+	if cache_path.exists() {
+		match read_cache(&cache_path) {
+			Ok(cache) =>
+				if cache.hash == hash {
+					return Ok(cache.program_json)
+				},
+			Err(err) => warn!(
+				"Error while reading cache {}: {err}",
+				cache_path.display().to_string()
+			),
+		}
+	}
+
+	let compile_output = compile_cairo_file(path_to_cairo_file)?;
+
+	let program_json: Value = serde_json::from_slice(&compile_output)?;
+
+	store_cache(
+		Cache {
+			program_json: program_json.clone(),
+			hash,
+		},
+		&cache_path,
+	)?;
+
+	Ok(program_json)
+}
+
+pub fn compile_cairo_file(path_to_cairo_file: &PathBuf) -> Result<Vec<u8>, Error> {
 	let path_to_cairo_compiler = which(CAIRO_COMPILE_BINARY)?;
 
 	// Use cairo-compile binary in order to compile the .cairo file
@@ -64,8 +97,9 @@ pub fn compile(path_to_cairo_file: &PathBuf) -> Result<PathBuf, Error> {
 		.output()
 		.map_err(Error::RunProcess)?;
 
-	// Check if the compilation was successful
-	if !compilation_output.status.success() {
+	if compilation_output.status.success() {
+		return Ok(compilation_output.stdout)
+	} else {
 		return Err(Error::Compilation(
 			path_to_cairo_compiler.as_path().display().to_string(),
 			String::from_utf8(compilation_output.stderr).unwrap_or_else(|e| {
@@ -77,29 +111,4 @@ pub fn compile(path_to_cairo_file: &PathBuf) -> Result<PathBuf, Error> {
 			}),
 		))
 	}
-
-	// Retrieve only the file name to create a clean compiled file name.
-	let filename = path_to_cairo_file
-		.file_stem()
-		.ok_or_else(|| Error::StemlessFile(path_to_cairo_file.as_path().display().to_string()))?;
-
-	let path_to_cache_dir = dirs::cache_dir().ok_or(Error::CacheDirSupported)?;
-
-	// Build path to save the  compiled file
-	let mut compiled_program_path = PathBuf::new();
-	compiled_program_path.push(&path_to_cache_dir);
-	compiled_program_path.push("compiled-cairo-files");
-	std::fs::create_dir_all(&compiled_program_path).map_err(|e| {
-		Error::DirCreation(compiled_program_path.as_path().display().to_string(), e)
-	})?;
-	compiled_program_path.push(filename);
-	compiled_program_path.set_extension(JSON_FILE_EXTENTION);
-
-	// Create a file to store command output inside a json file
-	let mut file = File::create(&compiled_program_path)
-		.map_err(|e| Error::FileCreation(path_to_cache_dir.as_path().display().to_string(), e))?;
-	file.write_all(&compilation_output.stdout)
-		.map_err(|e| Error::WriteToFile(path_to_cache_dir.as_path().display().to_string(), e))?;
-
-	Ok(compiled_program_path)
 }
