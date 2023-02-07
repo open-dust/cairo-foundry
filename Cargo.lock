@@ -163,6 +163,7 @@ dependencies = [
  "rstest",
  "serde",
  "serde_json",
+ "sha2 0.10.6",
  "thiserror",
  "uuid",
  "walkdir",

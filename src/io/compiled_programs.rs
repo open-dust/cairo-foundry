@@ -18,14 +18,12 @@ pub enum ListTestEntrypointsError {
 ///
 /// return a vector of entrypoints
 pub fn list_test_entrypoints(
-	path_to_compiled_cairo_program: &PathBuf,
+	program_json: &Value,
 ) -> Result<Vec<String>, ListTestEntrypointsError> {
 	let re = Regex::new(r"__main__.(test_\w+)$").expect("Should be a valid regex");
-	let data = fs::read_to_string(path_to_compiled_cairo_program)?;
-	let json = serde_json::from_str::<Value>(&data)?;
 	let mut test_entrypoints = Vec::new();
 
-	let identifiers = json["identifiers"].as_object();
+	let identifiers = program_json["identifiers"].as_object();
 	match identifiers {
 		Some(identifiers) => {
 			for (key, value) in identifiers {
