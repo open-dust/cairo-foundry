@@ -24,7 +24,6 @@ regex = { version = "1.6.0", default-features = true }
 rstest = "0.15.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sha2 = "0.10.6"
 thiserror = "1.0.37"
 uuid = { version = "1.2.1", features = ["v4"] }
 walkdir = "2.3.2"

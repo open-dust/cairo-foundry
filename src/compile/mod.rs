@@ -4,9 +4,9 @@ use std::{fmt::Debug, io, path::PathBuf, process::Command};
 use thiserror::Error;
 use which::{which, Error as WhichError};
 
-use self::cache::{compute_hash, get_cache_path, read_cache, store_cache, Cache, CacheError};
+use self::cache::{get_cache_path, hash_file, read_cache, store_cache, Cache, CacheError};
 
-pub mod cache;
+mod cache;
 
 const CAIRO_COMPILE_BINARY: &str = "cairo-compile";
 
@@ -58,7 +58,7 @@ pub enum Error {
 pub fn compile(path_to_cairo_file: &PathBuf) -> Result<Value, Error> {
 	let cache_path = get_cache_path(path_to_cairo_file)?;
 
-	let hash = compute_hash(&path_to_cairo_file)?;
+	let hash = hash_file(&path_to_cairo_file)?;
 
 	if cache_path.exists() {
 		match read_cache(&cache_path) {
