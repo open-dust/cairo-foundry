@@ -6,7 +6,7 @@ use std::env;
 
 use std::{
 	fmt::Debug,
-	fs::{read_to_string, File},
+	fs::{self, read_to_string, File},
 	io,
 	path::PathBuf,
 };
@@ -113,10 +113,10 @@ pub fn get_compile_cache_path(path_to_cairo_file: &PathBuf) -> Result<PathBuf, C
 	let mut cache_path = cache_dir()?;
 	cache_path.push(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR);
 
-	std::fs::create_dir_all(&cache_path)
+	fs::create_dir_all(&cache_path)
 		.map_err(|e| CacheError::DirCreation(cache_path.as_path().display().to_string(), e))?;
 
-	cache_path.push(format!("{}_{}", filename, path_hash));
+	cache_path.push(format!("{filename}_{path_hash}"));
 	cache_path.set_extension(JSON_FILE_EXTENTION);
 
 	Ok(cache_path)

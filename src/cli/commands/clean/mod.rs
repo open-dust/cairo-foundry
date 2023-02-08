@@ -25,6 +25,8 @@ pub enum CleanCommandError {
 	CacheDirNotSupported(#[from] cache::CacheDirNotSupported),
 	#[error("Cannot remove directory {dir}: {err}")]
 	DirDeletion { dir: String, err: io::Error },
+	#[error("Cannot create directory {dir}: {err}")]
+	DirCreation { dir: String, err: io::Error },
 }
 
 impl Display for CleanOutput {
