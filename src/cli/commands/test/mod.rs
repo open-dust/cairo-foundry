@@ -2,7 +2,7 @@
 pub mod tests;
 
 use cairo_rs::{
-	serde::deserialize_program::{deserialize_program_json, ProgramJson},
+	serde::deserialize_program::{ProgramJson},
 	types::{errors::program_errors, program::Program},
 	vm::{
 		errors::{cairo_run_errors::CairoRunError, vm_errors::VirtualMachineError},
@@ -12,8 +12,8 @@ use cairo_rs::{
 use clap::{Args, ValueHint};
 use colored::Colorize;
 use serde::Serialize;
-use serde_json::Value;
-use std::{fmt::Display, fs, io, path::PathBuf, sync::Arc, time::Instant};
+
+use std::{fmt::Display, io, path::PathBuf, sync::Arc, time::Instant};
 use thiserror::Error;
 use uuid::Uuid;
 
