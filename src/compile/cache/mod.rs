@@ -111,7 +111,7 @@ pub fn get_compile_cache_path(path_to_cairo_file: &PathBuf) -> Result<PathBuf, C
 
 	// Build path to save the  compiled file
 	let mut cache_path = cache_dir()?;
-	cache_path.push(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR);
+	cache_path.push(CAIRO_FOUNDRY_CACHE_DIR);
 
 	fs::create_dir_all(&cache_path)
 		.map_err(|e| CacheError::DirCreation(cache_path.as_path().display().to_string(), e))?;
