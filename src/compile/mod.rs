@@ -1,3 +1,4 @@
+use cairo_rs::serde::deserialize_program::ProgramJson;
 use log::warn;
 use serde_json::Value;
 use std::{fmt::Debug, io, path::PathBuf, process::Command};
@@ -55,7 +56,7 @@ pub enum Error {
 /// # Ok(())
 /// # }
 /// ```
-pub fn compile(path_to_cairo_file: &PathBuf) -> Result<Value, Error> {
+pub fn compile(path_to_cairo_file: &PathBuf) -> Result<ProgramJson, Error> {
 	let cache_path = get_compile_cache_path(path_to_cairo_file)?;
 
 	let hash = hash_file(&path_to_cairo_file)?;
@@ -64,9 +65,9 @@ pub fn compile(path_to_cairo_file: &PathBuf) -> Result<Value, Error> {
 		match CompileCacheItem::read(&cache_path) {
 			Ok(cache) =>
 				if cache.hash == hash {
-					return Ok(cache.program_json)
+					let program_json: ProgramJson = serde_json::from_value(cache.program_json)?;
+					return Ok(program_json)
 				},
-
 			Err(err) => warn!(
 				"Error while reading cache {}: {err}",
 				cache_path.display().to_string()
@@ -82,6 +83,8 @@ pub fn compile(path_to_cairo_file: &PathBuf) -> Result<Value, Error> {
 		program_json: program_json.clone(),
 		hash,
 	};
+
+	let program_json: ProgramJson = serde_json::from_value(program_json)?;
 
 	cache.write(&cache_path)?;
 

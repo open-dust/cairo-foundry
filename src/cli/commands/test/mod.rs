@@ -119,7 +119,7 @@ fn setup_hooks() -> Hooks {
 /// (path_to_original_code, path_to_compiled_code, entrypoints)
 fn compile_and_list_entrypoints(
 	path_to_code: PathBuf,
-) -> Result<(PathBuf, Value, Vec<String>), TestCommandError> {
+) -> Result<(PathBuf, ProgramJson, Vec<String>), TestCommandError> {
 	let program_json = compile(&path_to_code)?;
 	let entrypoints = list_test_entrypoints(&program_json)?;
 	Ok((path_to_code, program_json, entrypoints))
@@ -199,15 +199,14 @@ fn test_single_entrypoint(
 
 	// Display the execution output if present
 	match runner.get_output(&mut vm) {
-		Ok(runner_output) => {
+		Ok(runner_output) =>
 			if !runner_output.is_empty() {
 				output.push_str(&format!(
 					"[{}]:\n{}",
 					"execution output".purple(),
 					&runner_output
 				));
-			}
-		},
+			},
 		Err(e) => eprintln!("failed to get output from the cairo runner: {e}"),
 	};
 
@@ -223,13 +222,11 @@ fn test_single_entrypoint(
 fn run_tests_for_one_file(
 	hint_processor: &mut FunctionLikeHintProcessor,
 	path_to_original: PathBuf,
-	program_json: Value,
+	program_json: ProgramJson,
 	test_entrypoints: Vec<String>,
 	hooks: Hooks,
 	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
-	let program_json: ProgramJson = serde_json::from_value(program_json)?;
-
 	let output = format!("Running tests in file {}\n", path_to_original.display());
 	let res = test_entrypoints
 		.into_iter()
@@ -269,7 +266,7 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 			.map(compile_and_list_entrypoints)
 			.map(|res| -> Result<TestResult, TestCommandError> {
 				match res {
-					Ok((path_to_original, program_json, test_entrypoints)) => {
+					Ok((path_to_original, program_json, test_entrypoints)) =>
 						run_tests_for_one_file(
 							&mut hint_processor,
 							path_to_original,
@@ -277,8 +274,7 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 							test_entrypoints,
 							hooks.clone(),
 							self.max_steps,
-						)
-					},
+						),
 					Err(err) => Err(err),
 				}
 			})
