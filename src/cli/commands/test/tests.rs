@@ -12,10 +12,8 @@ pub fn run_single_test(
 	test_path: &PathBuf,
 	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
-	let (_, path_to_compiled, _) = compile_and_list_entrypoints(test_path.to_owned())?;
-	let file = File::open(path_to_compiled).unwrap();
-	let reader = BufReader::new(file);
-	let program_json = deserialize_program_json(reader)?;
+	let (_, program_json, _) = compile_and_list_entrypoints(test_path.to_owned())?;
+	let program_json = serde_json::from_value(program_json)?;
 
 	test_single_entrypoint(
 		program_json,
