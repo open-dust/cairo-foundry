@@ -31,22 +31,22 @@ impl Display for CleanOutput {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		for (dir, deleted) in self.dirs.iter() {
 			if *deleted {
-				write!(f, "cleaned  : {}\n", dir.display().to_string())?;
+				writeln!(f, "cleaned  : {}", dir.display())?;
 			} else {
-				write!(f, "not found: {}\n", dir.display().to_string())?;
+				writeln!(f, "not found: {}", dir.display())?;
 			}
 		}
-		write!(f, "Cache cleaned successfully.\n")
+		writeln!(f, "Cache cleaned successfully.")
 	}
 }
 
 fn remove_dir_all_if_exists(dir: &PathBuf) -> Result<bool, CleanCommandError> {
 	if dir.exists() {
-		fs::remove_dir_all(&dir).map_err(|err| CleanCommandError::DirDeletion {
+		fs::remove_dir_all(dir).map_err(|err| CleanCommandError::DirDeletion {
 			dir: dir.as_path().display().to_string(),
 			err,
 		})?;
-		return Ok(true);
+		return Ok(true)
 	}
 	Ok(false)
 }
