@@ -59,7 +59,7 @@ pub enum Error {
 pub fn compile(path_to_cairo_file: &PathBuf) -> Result<ProgramJson, Error> {
 	let cache_path = get_compile_cache_path(path_to_cairo_file)?;
 
-	let hash = hash_file(&path_to_cairo_file)?;
+	let hash = hash_file(path_to_cairo_file)?;
 
 	if cache_path.exists() {
 		match CompileCacheItem::read(&cache_path) {
@@ -101,7 +101,7 @@ pub fn compile_cairo_file(path_to_cairo_file: &PathBuf) -> Result<Vec<u8>, Error
 		.map_err(Error::RunProcess)?;
 
 	if compilation_output.status.success() {
-		return Ok(compilation_output.stdout)
+		Ok(compilation_output.stdout)
 	} else {
 		return Err(Error::Compilation(
 			path_to_cairo_compiler.as_path().display().to_string(),

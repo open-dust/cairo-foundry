@@ -94,10 +94,10 @@ impl CompileCacheItem {
 	}
 
 	pub fn write(&self, cache_path: &PathBuf) -> Result<(), CacheError> {
-		let file = File::create(&cache_path)
+		let file = File::create(cache_path)
 			.map_err(|e| CacheError::FileCreation(cache_path.as_path().display().to_string(), e))?;
 
-		serde_json::to_writer(file, self).map_err(|e| CacheError::SerializeError(e))
+		serde_json::to_writer(file, self).map_err(CacheError::SerializeError)
 	}
 }
 
@@ -116,10 +116,10 @@ pub fn get_compile_cache_path(path_to_cairo_file: &PathBuf) -> Result<PathBuf, C
 	std::fs::create_dir_all(&cache_path)
 		.map_err(|e| CacheError::DirCreation(cache_path.as_path().display().to_string(), e))?;
 
-	cache_path.push(format!("{}_{}", filename, path_hash.to_string()));
+	cache_path.push(format!("{}_{}", filename, path_hash));
 	cache_path.set_extension(JSON_FILE_EXTENTION);
 
-	return Ok(cache_path)
+	Ok(cache_path)
 }
 
 fn is_valid_cairo_contract(contract_path: &PathBuf) -> Result<(), CacheError> {

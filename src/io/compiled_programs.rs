@@ -1,8 +1,8 @@
-use std::{fs, io, path::PathBuf};
+use std::{io};
 
 use cairo_rs::serde::deserialize_program::ProgramJson;
 use regex::Regex;
-use serde_json::Value;
+
 use thiserror::Error;
 
 #[derive(Debug, Error)]
