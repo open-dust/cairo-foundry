@@ -1,7 +1,10 @@
 #[cfg(test)]
 mod tests;
 
-use std::{env, fmt::Debug, fs::read_to_string, io, path::PathBuf};
+#[cfg(test)]
+use std::env;
+
+use std::{fmt::Debug, fs::read_to_string, io, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -61,7 +64,7 @@ fn is_valid_cairo_contract(contract_path: &PathBuf) -> Result<(), CacheError> {
 	if extension != "cairo" {
 		return Err(CacheError::InvalidContractExtension(
 			contract_path.to_owned(),
-		));
+		))
 	}
 	Ok(())
 }
