@@ -31,11 +31,13 @@ pub struct HintFunc(
 	>,
 );
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum Code {
 	RawCode(String),
 	Function(String, Vec<String>), // (name, args)
 }
 
+#[derive(Debug)]
 pub struct FunctionLikeHintProcessorData {
 	pub code: Code,
 	pub ap_tracking: ApTracking,
@@ -114,34 +116,35 @@ impl HintProcessor for FunctionLikeHintProcessor {
 		reference_ids: &HashMap<String, usize>,
 		references: &HashMap<usize, HintReference>,
 	) -> Result<Box<dyn std::any::Any>, VirtualMachineError> {
-		let hint_code_trim = hint_code.trim();
-		let index_of_opening_parenthesis = match hint_code_trim.find('(') {
+		let trimmed_hint_code = hint_code.trim();
+		let ids_data = get_ids_data(reference_ids, references)?;
+		let index_of_opening_parenthesis = match trimmed_hint_code.find('(') {
 			None =>
 				return Ok(any_box!(FunctionLikeHintProcessorData {
 					code: Code::RawCode(hint_code.to_string()),
 					ap_tracking: ap_tracking.clone(),
-					ids_data: get_ids_data(reference_ids, references)?,
+					ids_data,
 				})),
 			Some(i) => i,
 		};
 
-		if !hint_code_trim.ends_with(')') {
+		if !trimmed_hint_code.ends_with(')') {
 			return Ok(any_box!(FunctionLikeHintProcessorData {
 				code: Code::RawCode(hint_code.to_string()),
 				ap_tracking: ap_tracking.clone(),
-				ids_data: get_ids_data(reference_ids, references)?,
+				ids_data,
 			}))
 		}
-		let name_func = hint_code_trim[..index_of_opening_parenthesis].to_string();
-		let list_args = hint_code_trim[index_of_opening_parenthesis + 1..]
+		let name_func = trimmed_hint_code[..index_of_opening_parenthesis].to_string();
+		let list_args = trimmed_hint_code[index_of_opening_parenthesis + 1..]
 			.split(',')
-			.map(|x| x.to_string())
+			.map(|x| x.trim().trim_matches(')').to_string())
 			.collect();
 
 		Ok(any_box!(FunctionLikeHintProcessorData {
 			code: Code::Function(name_func, list_args),
 			ap_tracking: ap_tracking.clone(),
-			ids_data: get_ids_data(reference_ids, references)?,
+			ids_data,
 		}))
 	}
 }
