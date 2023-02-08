@@ -3,22 +3,19 @@ use std::path::PathBuf;
 use assert_matches::assert_matches;
 
 use super::{
-	cache_dir, get_cache_path, get_compiled_contract_path, read_cache_file, Cache, CacheError,
+	cache_dir, get_cache_path, get_compiled_contract_path, CacheError, CompileCacheItem,
+	CAIRO_FOUNDRY_CACHE_DIR, CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR,
 };
-
-const CAIRO_FOUNDRY_CACHE_DIR: &str = "cairo-foundry-cache";
-const CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR: &str = "compiled-cairo-files";
 
 #[test]
 fn read_cache_with_valid_input() {
 	let current_dir = std::env::current_dir().unwrap();
 	let cache_path = current_dir.join("test_cache_files").join("test_valid_program.json");
-	let cache = read_cache_file(&cache_path).unwrap();
+	let cache = CompileCacheItem::read(&cache_path).unwrap();
 
-	let expected = Cache {
-		contract_path: PathBuf::from("test_cairo_contracts/test_valid_program.cairo"),
-		compiled_contract_path: PathBuf::from("test_compiled_contracts/test_valid_program.json"),
-		hash: "0x0000000000000000000000000000000000000000000000000000000000000001".to_string(),
+	let expected = CompileCacheItem {
+		program_json: "".into(),
+		hash: 10,
 	};
 
 	assert_eq!(cache, expected);
@@ -28,20 +25,20 @@ fn read_cache_with_valid_input() {
 fn read_non_existing_cache_file() {
 	let current_dir = std::env::current_dir().unwrap();
 	let cache_path = current_dir.join("test_cache_files").join("non_existing_cache.json");
-	let result = read_cache_file(&cache_path);
-	assert_matches!(result, Err(CacheError::FileNotFoundError(_)));
+	let result = CompileCacheItem::read(&cache_path);
+	assert_matches!(result, Err(CacheError::ReadFile(_, _)));
 }
 
 #[test]
 fn read_existing_cache_with_incorrect_field() {
 	let current_dir = std::env::current_dir().unwrap();
 	let cache_path = current_dir.join("test_cache_files").join("test_invalid_structure.json");
-	let result = read_cache_file(&cache_path);
-	assert_matches!(result, Err(CacheError::DeserializeError(_)));
+	let result = CompileCacheItem::read(&cache_path);
+	assert_matches!(result, Err(CacheError::DeserializeError(_, _)));
 }
 
 #[test]
-fn get_cache_path_for_valid_contract_path() {
+fn get_cache_path_for_valid_contract_path() -> Result<(), CacheError> {
 	let current_dir = std::env::current_dir().unwrap();
 	let root_dir = current_dir.join("test_cairo_contracts");
 
@@ -89,6 +86,8 @@ fn get_cache_path_for_valid_contract_path() {
 		.join("test_nested_dir")
 		.join("test_valid_program_in_cairo_contracts_dir.json");
 	assert_eq!(cache_path, expected);
+
+	Ok(())
 }
 
 #[test]
