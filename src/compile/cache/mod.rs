@@ -70,8 +70,8 @@ pub fn cache_dir() -> Result<PathBuf, CacheDirNotSupported> {
 
 // TODO: support cashing compile errors to avoid recompiling files that failed before
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Cache {
-	pub hash: String,
+pub struct CompileCacheItem {
+	pub hash: u64,
 	// TODO: make program_json: ProgramJson, we're not using it right now because
 	// it doesn't implement Serialize
 	pub program_json: Value,
@@ -85,12 +85,22 @@ pub fn read_cache(path: &PathBuf) -> Result<Cache, CacheError> {
 	Ok(data)
 }
 
-pub fn store_cache(cache: Cache, cache_path: &PathBuf) -> Result<(), CacheError> {
-	// Create a file to store command output inside a json file
-	let file = File::create(&cache_path)
-		.map_err(|e| CacheError::FileCreation(cache_path.as_path().display().to_string(), e))?;
+impl CompileCacheItem {
+	pub fn read(path: &PathBuf) -> Result<CompileCacheItem, CacheError> {
+		let file_content = read_to_string(path)
+			.map_err(|e| CacheError::ReadFile(path.as_path().display().to_string(), e))?;
 
-	serde_json::to_writer(file, &cache).map_err(|e| CacheError::SerializeError(e))
+		let data = serde_json::from_str::<CompileCacheItem>(file_content.as_str())
+			.map_err(|e| CacheError::DeserializeError(file_content, e))?;
+		Ok(data)
+	}
+
+	pub fn write(&self, cache_path: &PathBuf) -> Result<(), CacheError> {
+		let file = File::create(&cache_path)
+			.map_err(|e| CacheError::FileCreation(cache_path.as_path().display().to_string(), e))?;
+
+		serde_json::to_writer(file, self).map_err(|e| CacheError::SerializeError(e))
+	}
 }
 
 pub fn get_cache_path(path_to_cairo_file: &PathBuf) -> Result<PathBuf, CacheError> {
