@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use assert_matches::assert_matches;
 
@@ -35,6 +35,63 @@ fn read_existing_cache_with_incorrect_field() {
 	let cache_path = current_dir.join("test_cache_files").join("test_invalid_structure.json");
 	let result = CompileCacheItem::read(&cache_path);
 	assert_matches!(result, Err(CacheError::DeserializeError(_, _)));
+}
+
+#[test]
+fn write_cache_with_valid_input() -> Result<(), CacheError> {
+	let cache_dir = std::env::temp_dir().join("cairo_foundry_test");
+
+	fs::create_dir_all(&cache_dir)
+		.map_err(|e| CacheError::DirCreation(cache_dir.as_path().display().to_string(), e))?;
+
+	let cache_path = cache_dir.join("write_cache_with_valid_input.json");
+
+	let cache = CompileCacheItem {
+		program_json: "".into(),
+		hash: 10,
+	};
+
+	CompileCacheItem::write(&cache, &cache_path)?;
+
+	let found_cache = CompileCacheItem::read(&cache_path)?;
+
+	assert_eq!(found_cache, cache);
+
+	Ok(())
+}
+
+#[test]
+fn update_cache_with_valid_input() -> Result<(), CacheError> {
+	let cache_dir = std::env::temp_dir().join("cairo_foundry_test");
+
+	fs::create_dir_all(&cache_dir)
+		.map_err(|e| CacheError::DirCreation(cache_dir.as_path().display().to_string(), e))?;
+
+	let cache_path = cache_dir.join("update_cache_with_valid_input.json");
+
+	let cache = CompileCacheItem {
+		program_json: "".into(),
+		hash: 10,
+	};
+
+	CompileCacheItem::write(&cache, &cache_path)?;
+
+	let found_cache = CompileCacheItem::read(&cache_path)?;
+
+	assert_eq!(found_cache, cache);
+
+	let cache = CompileCacheItem {
+		program_json: "updated".into(),
+		hash: 20,
+	};
+
+	CompileCacheItem::write(&cache, &cache_path)?;
+
+	let found_cache = CompileCacheItem::read(&cache_path)?;
+
+	assert_eq!(found_cache, cache);
+
+	Ok(())
 }
 
 #[test]
