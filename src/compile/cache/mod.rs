@@ -52,8 +52,6 @@ pub enum CacheError {
 	SerializeError(serde_json::Error),
 	#[error("failed to read file '{0}': {1}")]
 	ReadFile(String, io::Error),
-	#[error("failed to hash file '{0}': {1}")]
-	HashError(String, io::Error),
 }
 
 pub const JSON_FILE_EXTENTION: &str = "json";
@@ -99,17 +97,21 @@ pub fn get_cache_path(path_to_cairo_file: &PathBuf) -> Result<PathBuf, CacheErro
 	let path_to_cache_dir = dirs::cache_dir().ok_or(CacheDirNotSupported)?;
 
 	// Retrieve only the file name to create a clean compiled file name.
-	let filename = path_to_cairo_file.file_stem().ok_or_else(|| {
+	let filename = path_to_cairo_file.file_stem().and_then(|f| f.to_str()).ok_or_else(|| {
 		CacheError::StemlessFile(path_to_cairo_file.as_path().display().to_string())
 	})?;
+
+	let path_hash = hash(path_to_cairo_file);
 
 	// Build path to save the  compiled file
 	let mut cache_path = PathBuf::new();
 	cache_path.push(&path_to_cache_dir);
 	cache_path.push(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR);
+
 	std::fs::create_dir_all(&cache_path)
 		.map_err(|e| CacheError::DirCreation(cache_path.as_path().display().to_string(), e))?;
-	cache_path.push(filename);
+
+	cache_path.push(format!("{}_{}", filename, path_hash.to_string()));
 	cache_path.set_extension(JSON_FILE_EXTENTION);
 
 	return Ok(cache_path)
