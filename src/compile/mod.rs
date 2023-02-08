@@ -4,7 +4,7 @@ use std::{fmt::Debug, io, path::PathBuf, process::Command};
 use thiserror::Error;
 use which::{which, Error as WhichError};
 
-use self::cache::{get_cache_path, hash_file, read_cache, store_cache, Cache, CacheError};
+use self::cache::{get_cache_path, hash_file, CacheError, CompileCacheItem};
 
 mod cache;
 
@@ -61,11 +61,12 @@ pub fn compile(path_to_cairo_file: &PathBuf) -> Result<Value, Error> {
 	let hash = hash_file(&path_to_cairo_file)?;
 
 	if cache_path.exists() {
-		match read_cache(&cache_path) {
+		match CompileCacheItem::read(&cache_path) {
 			Ok(cache) =>
 				if cache.hash == hash {
 					return Ok(cache.program_json)
 				},
+
 			Err(err) => warn!(
 				"Error while reading cache {}: {err}",
 				cache_path.display().to_string()
@@ -77,13 +78,12 @@ pub fn compile(path_to_cairo_file: &PathBuf) -> Result<Value, Error> {
 
 	let program_json: Value = serde_json::from_slice(&compile_output)?;
 
-	store_cache(
-		Cache {
-			program_json: program_json.clone(),
-			hash,
-		},
-		&cache_path,
-	)?;
+	let cache = CompileCacheItem {
+		program_json: program_json.clone(),
+		hash,
+	};
+
+	cache.write(&cache_path)?;
 
 	Ok(program_json)
 }
