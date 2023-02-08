@@ -2,7 +2,7 @@
 pub mod tests;
 
 use cairo_rs::{
-	serde::deserialize_program::{ProgramJson},
+	serde::deserialize_program::ProgramJson,
 	types::{errors::program_errors, program::Program},
 	vm::{
 		errors::{cairo_run_errors::CairoRunError, vm_errors::VirtualMachineError},

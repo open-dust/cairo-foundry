@@ -1,4 +1,4 @@
-use std::{io};
+use std::io;
 
 use cairo_rs::serde::deserialize_program::ProgramJson;
 use regex::Regex;
