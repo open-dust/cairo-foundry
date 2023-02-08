@@ -15,7 +15,10 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use serde_json::{self, Value};
-use sha2::{Digest, Sha256};
+use std::{
+	collections::hash_map::DefaultHasher,
+	hash::{Hash, Hasher},
+};
 
 // CacheDirNotSupported is a top level struct and not an enum variant because
 // it's converted elsewhere to other errors using [#from] and we want to be
@@ -150,13 +153,14 @@ fn get_compiled_contract_path(
 	Ok(compiled_contract_path)
 }
 
-pub fn compute_hash(filepath: &PathBuf) -> Result<String, CacheError> {
-	// hash filepath
-	let mut hasher = Sha256::new();
-	let mut file = File::open(filepath)
-		.map_err(|e| CacheError::ReadFile(filepath.display().to_string(), e))?;
-	io::copy(&mut file, &mut hasher)
-		.map_err(|e| CacheError::HashError(filepath.display().to_string(), e))?;
-	let hash = hasher.finalize();
-	return Ok(format!("{:x}", hash))
+pub fn hash_file(path: &PathBuf) -> Result<u64, CacheError> {
+	let data =
+		std::fs::read(path).map_err(|e| CacheError::ReadFile(path.display().to_string(), e))?;
+	Ok(hash(&data))
+}
+
+fn hash<T: Hash>(t: &T) -> u64 {
+	let mut s = DefaultHasher::new();
+	t.hash(&mut s);
+	s.finish()
 }
