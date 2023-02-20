@@ -11,14 +11,14 @@ use super::{
 fn read_cache_with_valid_input() {
 	let current_dir = std::env::current_dir().unwrap();
 	let cache_path = current_dir.join("test_cache_files").join("test_valid_program.json");
-	let cache = CompileCacheItem::read(&cache_path).unwrap();
+	let found_cache = CompileCacheItem::read(&cache_path).unwrap();
 
-	let expected = CompileCacheItem {
+	let expected_cache = CompileCacheItem {
 		program_json: "".into(),
 		hash: 10,
 	};
 
-	assert_eq!(cache, expected);
+	assert_eq!(found_cache, expected_cache);
 }
 
 #[test]
@@ -46,16 +46,16 @@ fn write_cache_with_valid_input() -> Result<(), CacheError> {
 
 	let cache_path = cache_dir.join("write_cache_with_valid_input.json");
 
-	let cache = CompileCacheItem {
+	let expected_cache = CompileCacheItem {
 		program_json: "".into(),
 		hash: 10,
 	};
 
-	CompileCacheItem::write(&cache, &cache_path)?;
+	CompileCacheItem::write(&expected_cache, &cache_path)?;
 
 	let found_cache = CompileCacheItem::read(&cache_path)?;
 
-	assert_eq!(found_cache, cache);
+	assert_eq!(found_cache, expected_cache);
 
 	Ok(())
 }
@@ -69,27 +69,27 @@ fn update_cache_with_valid_input() -> Result<(), CacheError> {
 
 	let cache_path = cache_dir.join("update_cache_with_valid_input.json");
 
-	let cache = CompileCacheItem {
+	let expected_cache = CompileCacheItem {
 		program_json: "".into(),
 		hash: 10,
 	};
 
-	CompileCacheItem::write(&cache, &cache_path)?;
+	CompileCacheItem::write(&expected_cache, &cache_path)?;
 
 	let found_cache = CompileCacheItem::read(&cache_path)?;
 
-	assert_eq!(found_cache, cache);
+	assert_eq!(found_cache, expected_cache);
 
-	let cache = CompileCacheItem {
+	let expected_cache = CompileCacheItem {
 		program_json: "updated".into(),
 		hash: 20,
 	};
 
-	CompileCacheItem::write(&cache, &cache_path)?;
+	CompileCacheItem::write(&expected_cache, &cache_path)?;
 
 	let found_cache = CompileCacheItem::read(&cache_path)?;
 
-	assert_eq!(found_cache, cache);
+	assert_eq!(found_cache, expected_cache);
 
 	Ok(())
 }
@@ -103,22 +103,22 @@ fn get_cache_path_for_valid_contract_path() -> Result<(), CacheError> {
 	let contract_path = root_dir.join("test_valid_program_in_cairo_contracts_dir.cairo");
 	let cache_path = get_cache_path(&contract_path, &root_dir).unwrap();
 
-	let expected = cache_dir()
+	let expected_cache_path = cache_dir()
 		.unwrap()
 		.join(CAIRO_FOUNDRY_CACHE_DIR)
 		.join("test_valid_program_in_cairo_contracts_dir.json");
 
-	assert_eq!(cache_path, expected);
+	assert_eq!(cache_path, expected_cache_path);
 
 	// in project root dir
 	let contract_path = current_dir.join("test_valid_program_in_project_root_dir.cairo");
 	let cache_path = get_cache_path(&contract_path, &current_dir).unwrap();
 
-	let expected = cache_dir()
+	let expected_cache_path = cache_dir()
 		.unwrap()
 		.join(CAIRO_FOUNDRY_CACHE_DIR)
 		.join("test_valid_program_in_project_root_dir.json");
-	assert_eq!(cache_path, expected);
+	assert_eq!(cache_path, expected_cache_path);
 
 	// in arbitrary path
 	let arbitrary_dir = PathBuf::from("arbitrary_dir");
@@ -137,12 +137,12 @@ fn get_cache_path_for_valid_contract_path() -> Result<(), CacheError> {
 		.join("test_valid_program_in_cairo_contracts_dir.cairo");
 	let cache_path = get_cache_path(&contract_path, &root_dir).unwrap();
 
-	let expected = cache_dir()
+	let expected_cache_path = cache_dir()
 		.unwrap()
 		.join(CAIRO_FOUNDRY_CACHE_DIR)
 		.join("test_nested_dir")
 		.join("test_valid_program_in_cairo_contracts_dir.json");
-	assert_eq!(cache_path, expected);
+	assert_eq!(cache_path, expected_cache_path);
 
 	Ok(())
 }
