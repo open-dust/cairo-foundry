@@ -33,7 +33,7 @@ impl Display for CleanOutput {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		for (dir, deleted) in self.dirs.iter() {
 			if *deleted {
-				writeln!(f, "cleaned  : {}", dir.display())?;
+				writeln!(f, "cleaned: {}", dir.display())?;
 			} else {
 				writeln!(f, "not found: {}", dir.display())?;
 			}
@@ -59,10 +59,7 @@ impl CommandExecution<CleanOutput, CleanCommandError> for CleanArgs {
 
 		let mut dirs: Vec<(PathBuf, bool)> = Vec::new();
 
-		let paths_to_clean = [
-			cache::CAIRO_FOUNDRY_CACHE_DIR,
-			cache::CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR,
-		];
+		let paths_to_clean = [cache::CAIRO_FOUNDRY_CACHE_DIR];
 
 		for path in paths_to_clean.iter() {
 			let dir = cache_dir.join(path);

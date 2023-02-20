@@ -56,7 +56,6 @@ pub enum CacheError {
 
 pub const JSON_FILE_EXTENTION: &str = "json";
 pub const CAIRO_FOUNDRY_CACHE_DIR: &str = "cairo-foundry-cache";
-pub const CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR: &str = "compiled-cairo-files";
 
 #[cfg(not(test))]
 pub fn cache_dir() -> Result<PathBuf, CacheDirNotSupported> {
