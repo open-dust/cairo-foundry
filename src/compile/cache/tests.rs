@@ -1,10 +1,8 @@
-use std::{fs};
+use std::fs;
 
 use assert_matches::assert_matches;
 
-use super::{
-	CacheError, CompileCacheItem,
-};
+use super::{CacheError, CompileCacheItem};
 
 #[test]
 fn read_cache_with_valid_input() {
