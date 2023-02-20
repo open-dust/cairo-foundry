@@ -122,43 +122,6 @@ pub fn get_compile_cache_path(path_to_cairo_file: &PathBuf) -> Result<PathBuf, C
 	Ok(cache_path)
 }
 
-fn is_valid_cairo_contract(contract_path: &PathBuf) -> Result<(), CacheError> {
-	let extension = contract_path
-		.extension()
-		.ok_or_else(|| CacheError::InvalidContractExtension(contract_path.to_owned()))?;
-	if extension != "cairo" {
-		return Err(CacheError::InvalidContractExtension(
-			contract_path.to_owned(),
-		))
-	}
-	Ok(())
-}
-
-fn get_cache_path(contract_path: &PathBuf, root_dir: &PathBuf) -> Result<PathBuf, CacheError> {
-	// check if contract_path have .cairo extension
-	is_valid_cairo_contract(contract_path)?;
-	// get relative dir path from root_dir
-	let contract_relative_path = contract_path.strip_prefix(root_dir)?;
-
-	let mut cache_path = cache_dir()?.join(CAIRO_FOUNDRY_CACHE_DIR).join(contract_relative_path);
-	cache_path.set_extension("json");
-	Ok(cache_path)
-}
-
-fn get_compiled_contract_path(
-	contract_path: &PathBuf,
-	root_dir: &PathBuf,
-) -> Result<PathBuf, CacheError> {
-	// check if contract_path have .cairo extension
-	is_valid_cairo_contract(contract_path)?;
-	let contract_relative_path = contract_path.strip_prefix(root_dir)?;
-	let mut compiled_contract_path = cache_dir()?
-		.join(CAIRO_FOUNDRY_COMPILED_CONTRACT_DIR)
-		.join(contract_relative_path);
-	compiled_contract_path.set_extension("json");
-	Ok(compiled_contract_path)
-}
-
 pub fn hash_file(path: &PathBuf) -> Result<u64, CacheError> {
 	let data =
 		std::fs::read(path).map_err(|e| CacheError::ReadFile(path.display().to_string(), e))?;
