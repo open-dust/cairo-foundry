@@ -8,6 +8,8 @@ use thiserror::Error;
 mod list;
 // test module: contains everything related to the `Test` command
 pub mod test;
+// clean module: contains everything related to the `Clean` command
+mod clean;
 
 #[derive(Error, Debug)]
 // Todo: Think about a better way to bubble up the errors
@@ -17,6 +19,8 @@ pub enum CommandError {
 	ListCommandError(#[from] list::ListCommandError),
 	#[error(transparent)]
 	TestCommandError(#[from] test::TestCommandError),
+	#[error(transparent)]
+	CleanCommandError(#[from] clean::CleanCommandError),
 }
 
 /// Enum of all supported commands
@@ -26,6 +30,8 @@ pub enum Commands {
 	List(list::ListArgs),
 	// Test cairo programs
 	Test(test::TestArgs),
+	// Cleans the cache files
+	Clean(clean::CleanArgs),
 }
 
 /// Behaviour of a command
@@ -36,6 +42,7 @@ pub trait CommandExecution<F: Formattable, E: error::Error + Into<CommandError>>
 enum CommandOutputs {
 	List(list::ListOutput),
 	Test(test::TestOutput),
+	Clean(clean::CleanOutput),
 }
 
 /// The executed command output
@@ -49,6 +56,7 @@ impl Serialize for Output {
 		match &self.0 {
 			CommandOutputs::List(output) => output.serialize(serializer),
 			CommandOutputs::Test(output) => output.serialize(serializer),
+			CommandOutputs::Clean(output) => output.serialize(serializer),
 		}
 	}
 }
@@ -58,6 +66,7 @@ impl fmt::Display for Output {
 		match &self.0 {
 			CommandOutputs::List(output) => output.fmt(f),
 			CommandOutputs::Test(output) => output.fmt(f),
+			CommandOutputs::Clean(output) => output.fmt(f),
 		}
 	}
 }
@@ -69,6 +78,8 @@ impl CommandExecution<Output, CommandError> for Commands {
 				args.exec().map_err(|e| e.into()).map(|o| Output(CommandOutputs::List(o))),
 			Commands::Test(args) =>
 				args.exec().map_err(|e| e.into()).map(|o| Output(CommandOutputs::Test(o))),
+			Commands::Clean(args) =>
+				args.exec().map_err(|e| e.into()).map(|o| Output(CommandOutputs::Clean(o))),
 		}
 	}
 }

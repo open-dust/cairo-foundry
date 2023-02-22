@@ -31,6 +31,7 @@ pub fn skip(
 	_ids_data: &HashMap<String, HintReference>,
 	_ap_tracking: &ApTracking,
 	_constants: &HashMap<String, BigInt>,
+	_args: &[String],
 ) -> Result<(), VirtualMachineError> {
 	Err(VirtualMachineError::CustomHint("skip".to_string()))
 }

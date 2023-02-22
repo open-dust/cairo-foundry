@@ -2,8 +2,7 @@
 pub mod tests;
 
 use cairo_rs::{
-	hint_processor::builtin_hint_processor::builtin_hint_processor_definition::BuiltinHintProcessor,
-	serde::deserialize_program::{deserialize_program_json, ProgramJson},
+	serde::deserialize_program::ProgramJson,
 	types::{errors::program_errors, program::Program},
 	vm::{
 		errors::{cairo_run_errors::CairoRunError, vm_errors::VirtualMachineError},
@@ -13,7 +12,8 @@ use cairo_rs::{
 use clap::{Args, ValueHint};
 use colored::Colorize;
 use serde::Serialize;
-use std::{fmt::Display, fs, io, path::PathBuf, sync::Arc, time::Instant};
+
+use std::{fmt::Display, io, path::PathBuf, sync::Arc, time::Instant};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -23,6 +23,7 @@ use crate::{
 	cairo_run::cairo_run,
 	compile::{self, compile},
 	hints::{
+		hint_processor::function_like_hint_processor::FunctionLikeHintProcessor,
 		output_buffer::{clear_buffer, get_buffer, init_buffer},
 		processor::setup_hint_processor,
 		EXPECT_REVERT_FLAG,
@@ -118,10 +119,10 @@ fn setup_hooks() -> Hooks {
 /// (path_to_original_code, path_to_compiled_code, entrypoints)
 fn compile_and_list_entrypoints(
 	path_to_code: PathBuf,
-) -> Result<(PathBuf, PathBuf, Vec<String>), TestCommandError> {
-	let path_to_compiled = compile(&path_to_code)?;
-	let entrypoints = list_test_entrypoints(&path_to_compiled)?;
-	Ok((path_to_code, path_to_compiled, entrypoints))
+) -> Result<(PathBuf, ProgramJson, Vec<String>), TestCommandError> {
+	let program_json = compile(&path_to_code)?;
+	let entrypoints = list_test_entrypoints(&program_json)?;
+	Ok((path_to_code, program_json, entrypoints))
 }
 
 fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
@@ -140,7 +141,7 @@ fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 fn test_single_entrypoint(
 	program: ProgramJson,
 	test_entrypoint: &str,
-	hint_processor: &mut BuiltinHintProcessor,
+	hint_processor: &mut FunctionLikeHintProcessor,
 	hooks: Option<Hooks>,
 	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
@@ -219,17 +220,13 @@ fn test_single_entrypoint(
 /// It will then return a TestResult corresponding to all the tests (SUCCESS if all the test
 /// succeded, FAILURE otherwise).
 fn run_tests_for_one_file(
-	hint_processor: &mut BuiltinHintProcessor,
+	hint_processor: &mut FunctionLikeHintProcessor,
 	path_to_original: PathBuf,
-	path_to_compiled: PathBuf,
+	program_json: ProgramJson,
 	test_entrypoints: Vec<String>,
 	hooks: Hooks,
 	max_steps: u64,
 ) -> Result<TestResult, TestCommandError> {
-	let file = fs::File::open(path_to_compiled).unwrap();
-	let reader = io::BufReader::new(file);
-	let program_json = deserialize_program_json(reader)?;
-
 	let output = format!("Running tests in file {}\n", path_to_original.display());
 	let res = test_entrypoints
 		.into_iter()
@@ -269,11 +266,11 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 			.map(compile_and_list_entrypoints)
 			.map(|res| -> Result<TestResult, TestCommandError> {
 				match res {
-					Ok((path_to_original, path_to_compiled, test_entrypoints)) =>
+					Ok((path_to_original, program_json, test_entrypoints)) =>
 						run_tests_for_one_file(
 							&mut hint_processor,
 							path_to_original,
-							path_to_compiled,
+							program_json,
 							test_entrypoints,
 							hooks.clone(),
 							self.max_steps,
@@ -285,7 +282,7 @@ impl CommandExecution<TestOutput, TestCommandError> for TestArgs {
 				Ok(result) => {
 					println!("{}", result.output);
 				},
-				Err(err) => println!("{}", format!("Error: {}", err).red()),
+				Err(err) => println!("{}", format!("Error: {err}").red()),
 			});
 
 		Ok(Default::default())
