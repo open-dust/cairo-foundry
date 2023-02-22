@@ -38,10 +38,10 @@ pub const MOCK_CALL_KEY: &str = "mock_call";
 /// # use cairo_rs::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{BuiltinHintProcessor, HintFunc,};
 /// # use crate::hints;
 /// # fn foo() ->BuiltinHintProcessor {
-/// 	let mock_call_hint = Rc::new(HintFunc(Box::new(hints::mock_call)));
-///     let mut hint_processor = BuiltinHintProcessor::new_empty();
-/// 	hint_processor.add_hint(String::from("mock_call"), mock_call_hint);
-/// # 	hint_processor
+///    let mock_call_hint = Rc::new(HintFunc(Box::new(hints::mock_call)));
+///    let mut hint_processor = BuiltinHintProcessor::new_empty();
+///    hint_processor.add_hint(String::from("mock_call"), mock_call_hint);
+/// #    hint_processor
 /// #  }
 /// ```
 pub fn mock_call(
