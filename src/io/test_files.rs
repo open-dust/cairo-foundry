@@ -54,6 +54,7 @@ mod tests {
 		assert_eq!(
 			vec![
 				PathBuf::from("./test_cairo_contracts/test_invalid_program.cairo"),
+				PathBuf::from("./test_cairo_contracts/test_retrieve_function_signatures.cairo"),
 				PathBuf::from("./test_cairo_contracts/test_valid_program.cairo"),
 			],
 			result.unwrap()

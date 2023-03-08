@@ -1,3 +1,4 @@
+pub mod program_parsing;
 #[cfg(test)]
 pub mod tests;
 
