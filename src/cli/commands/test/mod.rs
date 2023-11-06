@@ -103,11 +103,16 @@ impl Display for TestOutput {
 	}
 }
 
-/// Create a new ``Hooks`` object, with the followings hooks:
-/// - pre_step_instruction
-/// - post_step_instruction
+/// Create a new [`Hooks`] object, implementing the followings hooks:
 ///
-/// see [src/hooks.rs]
+/// - [`pre_step_instruction`](hooks::pre_step_instruction)
+/// - [`post_step_instruction`](hooks::post_step_instruction)
+///
+/// [`Hooks`] object can be given to `CairoRunner` to be applied by the `VirtualMachine`
+///
+/// Returns a [`Hooks`] object
+///
+/// See [`cairo_run`] for usage
 fn setup_hooks() -> Hooks {
 	Hooks::new(
 		Arc::new(hooks::pre_step_instruction),
@@ -115,8 +120,12 @@ fn setup_hooks() -> Hooks {
 	)
 }
 
-/// Compile a cairo file, returning a truple
-/// (path_to_original_code, path_to_compiled_code, entrypoints)
+/// Compile a cairo file and return a list of test entrypoints found
+///
+/// The given `&PathBuf` will be compiled (see [`compile()`]).  
+/// The compiled file will be parsed to find entrypoints (see [`list_test_entrypoints()`]).
+///
+/// Returns a tuple `(path_to_code, path_to_compiled, entrypoints)`
 fn compile_and_list_entrypoints(
 	path_to_code: PathBuf,
 ) -> Result<(PathBuf, ProgramJson, Vec<String>), TestCommandError> {
@@ -125,6 +134,14 @@ fn compile_and_list_entrypoints(
 	Ok((path_to_code, program_json, entrypoints))
 }
 
+/// Purge a hint output buffer
+///
+/// The content of the hint buffer associated with the given `execution_uuid`
+/// will be pushed to `output`.  
+/// The hint buffer is then cleared.  
+/// See [`output_buffer`](`crate::hints::output_buffer`)
+///
+/// Returns nothing
 fn purge_hint_buffer(execution_uuid: &Uuid, output: &mut String) {
 	// Safe to unwrap as long as `init_buffer` has been called before
 	let buffer = get_buffer(execution_uuid).unwrap();
